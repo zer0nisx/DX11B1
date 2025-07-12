@@ -1,0 +1,75 @@
+cbuffer ConstantBuffer : register(b0)
+{
+    matrix World;
+    matrix View;
+    matrix Projection;
+};
+
+cbuffer BoneBuffer : register(b1)
+{
+    matrix BoneTransforms[100]; // Max 100 bones
+};
+
+struct SkinnedVertexInput
+{
+    float3 position : POSITION;
+    float3 normal : NORMAL;
+    float2 texCoord : TEXCOORD;
+    float4 boneWeights : BLENDWEIGHT;
+    uint4 boneIndices : BLENDINDICES;
+};
+
+struct VertexOutput
+{
+    float4 position : SV_POSITION;
+    float3 normal : NORMAL;
+    float2 texCoord : TEXCOORD0;
+    float3 worldPos : WORLD_POSITION;
+};
+
+VertexOutput main(SkinnedVertexInput input)
+{
+    VertexOutput output;
+
+    // Initialize skinned position and normal
+    float4 skinnedPos = float4(0, 0, 0, 0);
+    float3 skinnedNormal = float3(0, 0, 0);
+
+    // Apply skinning transformation
+    for(int i = 0; i < 4; i++)
+    {
+        if(input.boneWeights[i] > 0.0f)
+        {
+            matrix boneTransform = BoneTransforms[input.boneIndices[i]];
+
+            // Transform position
+            skinnedPos += input.boneWeights[i] * mul(float4(input.position, 1.0f), boneTransform);
+
+            // Transform normal
+            skinnedNormal += input.boneWeights[i] * mul(input.normal, (float3x3)boneTransform);
+        }
+    }
+
+    // Ensure we have a valid position
+    skinnedPos.w = 1.0f;
+
+    // Transform skinned vertex to world space
+    float4 worldPos = mul(skinnedPos, World);
+
+    // Transform to view space
+    float4 viewPos = mul(worldPos, View);
+
+    // Transform to projection space
+    output.position = mul(viewPos, Projection);
+
+    // Transform skinned normal to world space
+    output.normal = normalize(mul(skinnedNormal, (float3x3)World));
+
+    // Pass through texture coordinates
+    output.texCoord = input.texCoord;
+
+    // Pass world position for lighting calculations
+    output.worldPos = worldPos.xyz;
+
+    return output;
+}
