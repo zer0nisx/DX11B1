@@ -5,12 +5,13 @@
 #include "Mesh/Mesh.h"
 #include "Mesh/Vertex.h"
 #include "Renderer/D3D11Renderer.h"
+#include "Renderer/Texture.h"
 
 using namespace GameEngine;
 
 class TestGame : public Core::Engine {
 public:
-    TestGame() : m_rotationY(0.0f) {}
+    TestGame() : m_rotationY(0.0f), m_currentTexture(0) {}
 
 protected:
     bool OnInitialize() override {
@@ -26,6 +27,12 @@ protected:
         // Load shaders
         if (!LoadShaders()) {
             LOG_ERROR("Failed to load shaders");
+            return false;
+        }
+
+        // Create textures
+        if (!CreateTextures()) {
+            LOG_ERROR("Failed to create textures");
             return false;
         }
 
@@ -66,6 +73,17 @@ protected:
         // Set constant buffer
         renderer.SetConstantBuffer(renderer.GetDevice() ? m_constantBuffer.Get() : nullptr, 0);
 
+        // Set texture and sampler
+        if (m_currentTexture == 0 && m_checkerTexture) {
+            renderer.SetTexture(m_checkerTexture->GetSRV(), 0);
+        } else if (m_currentTexture == 1 && m_colorTexture) {
+            renderer.SetTexture(m_colorTexture->GetSRV(), 0);
+        }
+
+        if (m_samplerState) {
+            renderer.SetSampler(m_samplerState.Get(), 0);
+        }
+
         // Create world matrix with rotation
         Math::Matrix4 worldMatrix = Math::Matrix4::RotationY(DirectX::XMConvertToRadians(m_rotationY));
 
@@ -86,6 +104,10 @@ protected:
         m_pixelShader.Reset();
         m_inputLayout.Reset();
         m_constantBuffer.Reset();
+
+        m_checkerTexture.reset();
+        m_colorTexture.reset();
+        m_samplerState.Reset();
 
         LOG_INFO("TestGame shutdown complete");
     }
@@ -110,10 +132,50 @@ protected:
                     LOG_INFO("Created new cube");
                 }
                 break;
+
+            case 'T':
+                // Toggle texture
+                m_currentTexture = (m_currentTexture + 1) % 2;
+                LOG_INFO("Switched to texture " << m_currentTexture);
+                break;
         }
     }
 
 private:
+    bool CreateTextures() {
+        auto& renderer = GetRenderer();
+        auto device = renderer.GetDevice();
+
+        if (!device) {
+            LOG_ERROR("Device is null in CreateTextures");
+            return false;
+        }
+
+        // Create checkerboard texture
+        m_checkerTexture = std::make_shared<Renderer::Texture>();
+        if (!m_checkerTexture->CreateCheckerboard(256, 256, device, 0xFFFFFFFF, 0xFF808080, 32)) {
+            LOG_ERROR("Failed to create checkerboard texture");
+            return false;
+        }
+
+        // Create solid color texture
+        m_colorTexture = std::make_shared<Renderer::Texture>();
+        if (!m_colorTexture->CreateSolidColor(256, 256, device, 0xFF4080FF)) {
+            LOG_ERROR("Failed to create color texture");
+            return false;
+        }
+
+        // Create sampler state
+        m_samplerState = TEXTURE_MANAGER.CreateSamplerState(device);
+        if (!m_samplerState) {
+            LOG_ERROR("Failed to create sampler state");
+            return false;
+        }
+
+        LOG_INFO("Successfully created textures");
+        return true;
+    }
+
     bool LoadShaders() {
         auto& renderer = GetRenderer();
 
@@ -127,9 +189,12 @@ private:
             return m_constantBuffer != nullptr;
         }
 
-        // Load pixel shader
-        if (!renderer.LoadPixelShader(L"Shaders/PixelShader.hlsl", m_pixelShader)) {
-            LOG_WARNING("Failed to load pixel shader");
+        // Load pixel shader - try simple one first
+        if (!renderer.LoadPixelShader(L"Shaders/SimplePixelShader.hlsl.txt", m_pixelShader)) {
+            LOG_WARNING("Failed to load SimplePixelShader.hlsl.txt, trying PixelShader.hlsl");
+            if (!renderer.LoadPixelShader(L"Shaders/PixelShader.hlsl", m_pixelShader)) {
+                LOG_WARNING("Failed to load pixel shader");
+            }
         }
 
         // Create constant buffer
@@ -147,6 +212,12 @@ private:
     Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;
     Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
     Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
+
+    // Textures
+    std::shared_ptr<Renderer::Texture> m_checkerTexture;
+    std::shared_ptr<Renderer::Texture> m_colorTexture;
+    Microsoft::WRL::ComPtr<ID3D11SamplerState> m_samplerState;
+    int m_currentTexture;
 };
 
 // Windows entry point

@@ -92,6 +92,27 @@ if(WIN32)
     )
 endif()
 
+# Configurar DirectXTK para texturas
+set(DIRECTXTK_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+if(EXISTS "${CMAKE_SOURCE_DIR}/Dependencies/DirectXTK/CMakeLists.txt")
+    add_subdirectory(Dependencies/DirectXTK)
+    set(DIRECTXTK_FOUND TRUE)
+    set(DIRECTXTK_LIBRARIES DirectXTK)
+    message(STATUS "DirectXTK found in Dependencies/")
+else()
+    # Intentar encontrar DirectXTK instalado
+    find_package(directxtk CONFIG)
+    if(directxtk_FOUND)
+        set(DIRECTXTK_FOUND TRUE)
+        set(DIRECTXTK_LIBRARIES Microsoft::DirectXTK)
+        message(STATUS "DirectXTK found (system)")
+    else()
+        message(WARNING "DirectXTK not found. Texture loading may be limited.")
+        message(STATUS "To enable DirectXTK: clone https://github.com/Microsoft/DirectXTK.git to Dependencies/DirectXTK/")
+        set(DIRECTXTK_FOUND FALSE)
+    endif()
+endif()
+
 # Enlazar Assimp si está disponible
 if(ASSIMP_FOUND)
     target_link_libraries(${PROJECT_NAME} ${ASSIMP_LIBRARIES})
@@ -104,6 +125,15 @@ if(ASSIMP_FOUND)
     message(STATUS "Assimp integration enabled")
 else()
     message(STATUS "Assimp integration disabled - building without model loading")
+endif()
+
+# Enlazar DirectXTK si está disponible
+if(DIRECTXTK_FOUND)
+    target_link_libraries(${PROJECT_NAME} ${DIRECTXTK_LIBRARIES})
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DIRECTXTK_ENABLED)
+    message(STATUS "DirectXTK integration enabled")
+else()
+    message(STATUS "DirectXTK integration disabled - limited texture support")
 endif()
 
 # Incluir directorios

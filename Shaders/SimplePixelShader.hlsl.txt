@@ -1,0 +1,26 @@
+struct PixelInput
+{
+    float4 position : SV_POSITION;
+    float3 normal : NORMAL;
+    float2 texCoord : TEXCOORD0;
+    float3 worldPos : WORLD_POSITION;
+};
+
+Texture2D diffuseTexture : register(t0);
+SamplerState textureSampler : register(s0);
+
+float4 main(PixelInput input) : SV_TARGET
+{
+    // Sample diffuse texture
+    float4 textureColor = diffuseTexture.Sample(textureSampler, input.texCoord);
+
+    // Simple lighting calculation
+    float3 lightDir = normalize(float3(0.0f, -1.0f, -1.0f));
+    float3 normal = normalize(input.normal);
+    float lightIntensity = max(dot(normal, -lightDir), 0.2f); // Min ambient of 0.2
+
+    // Apply lighting to texture
+    float3 finalColor = textureColor.rgb * lightIntensity;
+
+    return float4(finalColor, textureColor.a);
+}
