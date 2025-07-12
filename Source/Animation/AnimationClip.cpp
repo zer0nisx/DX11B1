@@ -1,11 +1,13 @@
 #include "AnimationClip.h"
 #include "../Core/Logger.h"
 #include <algorithm>
+#include <DirectXMath.h>
 
-namespace GameEngine {
-namespace Animation {
+using namespace GameEngine::Animation;
+using namespace GameEngine::Core;
+using namespace DirectX;
 
-// AnimationChannel implementations
+// AnimationChannel implementation
 DirectX::XMFLOAT3 AnimationChannel::SamplePosition(float time) const {
     if (positionKeys.empty()) {
         return DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
@@ -17,8 +19,8 @@ DirectX::XMFLOAT3 AnimationChannel::SamplePosition(float time) const {
 
     size_t keyIndex = FindPositionKeyframe(time);
 
-    if (keyIndex >= positionKeys.size() - 1) {
-        return positionKeys.back().position;
+    if (keyIndex == positionKeys.size() - 1) {
+        return positionKeys[keyIndex].position;
     }
 
     const PositionKeyframe& key1 = positionKeys[keyIndex];
@@ -30,6 +32,8 @@ DirectX::XMFLOAT3 AnimationChannel::SamplePosition(float time) const {
     }
 
     float t = (time - key1.time) / deltaTime;
+    t = std::clamp(t, 0.0f, 1.0f);
+
     return InterpolatePosition(key1, key2, t);
 }
 
@@ -44,8 +48,8 @@ DirectX::XMFLOAT4 AnimationChannel::SampleRotation(float time) const {
 
     size_t keyIndex = FindRotationKeyframe(time);
 
-    if (keyIndex >= rotationKeys.size() - 1) {
-        return rotationKeys.back().rotation;
+    if (keyIndex == rotationKeys.size() - 1) {
+        return rotationKeys[keyIndex].rotation;
     }
 
     const RotationKeyframe& key1 = rotationKeys[keyIndex];
@@ -57,6 +61,8 @@ DirectX::XMFLOAT4 AnimationChannel::SampleRotation(float time) const {
     }
 
     float t = (time - key1.time) / deltaTime;
+    t = std::clamp(t, 0.0f, 1.0f);
+
     return InterpolateRotation(key1, key2, t);
 }
 
@@ -71,8 +77,8 @@ DirectX::XMFLOAT3 AnimationChannel::SampleScale(float time) const {
 
     size_t keyIndex = FindScaleKeyframe(time);
 
-    if (keyIndex >= scaleKeys.size() - 1) {
-        return scaleKeys.back().scale;
+    if (keyIndex == scaleKeys.size() - 1) {
+        return scaleKeys[keyIndex].scale;
     }
 
     const ScaleKeyframe& key1 = scaleKeys[keyIndex];
@@ -84,86 +90,132 @@ DirectX::XMFLOAT3 AnimationChannel::SampleScale(float time) const {
     }
 
     float t = (time - key1.time) / deltaTime;
+    t = std::clamp(t, 0.0f, 1.0f);
+
     return InterpolateScale(key1, key2, t);
 }
 
 DirectX::XMMATRIX AnimationChannel::SampleTransform(float time) const {
-    DirectX::XMFLOAT3 position = SamplePosition(time);
-    DirectX::XMFLOAT4 rotation = SampleRotation(time);
-    DirectX::XMFLOAT3 scale = SampleScale(time);
+    XMFLOAT3 position = SamplePosition(time);
+    XMFLOAT4 rotation = SampleRotation(time);
+    XMFLOAT3 scale = SampleScale(time);
 
-    // Create transformation matrix: Scale * Rotation * Translation
-    DirectX::XMMATRIX scaleMatrix = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z);
-    DirectX::XMMATRIX rotationMatrix = DirectX::XMMatrixRotationQuaternion(DirectX::XMLoadFloat4(&rotation));
-    DirectX::XMMATRIX translationMatrix = DirectX::XMMatrixTranslation(position.x, position.y, position.z);
+    // Convert to DirectX vectors
+    XMVECTOR positionVec = XMLoadFloat3(&position);
+    XMVECTOR rotationQuat = XMLoadFloat4(&rotation);
+    XMVECTOR scaleVec = XMLoadFloat3(&scale);
 
-    return DirectX::XMMatrixMultiply(DirectX::XMMatrixMultiply(scaleMatrix, rotationMatrix), translationMatrix);
+    // Create transformation matrix
+    XMMATRIX scaleMatrix = XMMatrixScalingFromVector(scaleVec);
+    XMMATRIX rotationMatrix = XMMatrixRotationQuaternion(rotationQuat);
+    XMMATRIX translationMatrix = XMMatrixTranslationFromVector(positionVec);
+
+    return scaleMatrix * rotationMatrix * translationMatrix;
 }
 
 DirectX::XMFLOAT3 AnimationChannel::InterpolatePosition(const PositionKeyframe& key1, const PositionKeyframe& key2, float t) const {
-    // Linear interpolation
-    DirectX::XMVECTOR pos1 = DirectX::XMLoadFloat3(&key1.position);
-    DirectX::XMVECTOR pos2 = DirectX::XMLoadFloat3(&key2.position);
-    DirectX::XMVECTOR result = DirectX::XMVectorLerp(pos1, pos2, t);
+    XMVECTOR pos1 = XMLoadFloat3(&key1.position);
+    XMVECTOR pos2 = XMLoadFloat3(&key2.position);
 
-    DirectX::XMFLOAT3 interpolated;
-    DirectX::XMStoreFloat3(&interpolated, result);
+    XMVECTOR result = XMVectorLerp(pos1, pos2, t);
+
+    XMFLOAT3 interpolated;
+    XMStoreFloat3(&interpolated, result);
     return interpolated;
 }
 
 DirectX::XMFLOAT4 AnimationChannel::InterpolateRotation(const RotationKeyframe& key1, const RotationKeyframe& key2, float t) const {
-    // Spherical linear interpolation (SLERP)
-    DirectX::XMVECTOR quat1 = DirectX::XMLoadFloat4(&key1.rotation);
-    DirectX::XMVECTOR quat2 = DirectX::XMLoadFloat4(&key2.rotation);
-    DirectX::XMVECTOR result = DirectX::XMQuaternionSlerp(quat1, quat2, t);
+    XMVECTOR quat1 = XMLoadFloat4(&key1.rotation);
+    XMVECTOR quat2 = XMLoadFloat4(&key2.rotation);
 
-    DirectX::XMFLOAT4 interpolated;
-    DirectX::XMStoreFloat4(&interpolated, result);
+    // Spherical linear interpolation for smooth rotation
+    XMVECTOR result = XMQuaternionSlerp(quat1, quat2, t);
+
+    // Normalize the result quaternion
+    result = XMQuaternionNormalize(result);
+
+    XMFLOAT4 interpolated;
+    XMStoreFloat4(&interpolated, result);
     return interpolated;
 }
 
 DirectX::XMFLOAT3 AnimationChannel::InterpolateScale(const ScaleKeyframe& key1, const ScaleKeyframe& key2, float t) const {
-    // Linear interpolation
-    DirectX::XMVECTOR scale1 = DirectX::XMLoadFloat3(&key1.scale);
-    DirectX::XMVECTOR scale2 = DirectX::XMLoadFloat3(&key2.scale);
-    DirectX::XMVECTOR result = DirectX::XMVectorLerp(scale1, scale2, t);
+    XMVECTOR scale1 = XMLoadFloat3(&key1.scale);
+    XMVECTOR scale2 = XMLoadFloat3(&key2.scale);
 
-    DirectX::XMFLOAT3 interpolated;
-    DirectX::XMStoreFloat3(&interpolated, result);
+    XMVECTOR result = XMVectorLerp(scale1, scale2, t);
+
+    XMFLOAT3 interpolated;
+    XMStoreFloat3(&interpolated, result);
     return interpolated;
 }
 
 size_t AnimationChannel::FindPositionKeyframe(float time) const {
+    if (positionKeys.empty()) {
+        return 0;
+    }
+
+    // Binary search for efficiency
     auto it = std::lower_bound(positionKeys.begin(), positionKeys.end(), time,
-        [](const PositionKeyframe& key, float time) {
-            return key.time < time;
+        [](const PositionKeyframe& keyframe, float t) {
+            return keyframe.time < t;
         });
 
-    if (it == positionKeys.begin()) return 0;
-    return std::distance(positionKeys.begin(), it) - 1;
+    if (it == positionKeys.end()) {
+        return positionKeys.size() - 1;
+    }
+
+    if (it == positionKeys.begin()) {
+        return 0;
+    }
+
+    // Return the index of the keyframe before the found one
+    return static_cast<size_t>(std::distance(positionKeys.begin(), it) - 1);
 }
 
 size_t AnimationChannel::FindRotationKeyframe(float time) const {
+    if (rotationKeys.empty()) {
+        return 0;
+    }
+
     auto it = std::lower_bound(rotationKeys.begin(), rotationKeys.end(), time,
-        [](const RotationKeyframe& key, float time) {
-            return key.time < time;
+        [](const RotationKeyframe& keyframe, float t) {
+            return keyframe.time < t;
         });
 
-    if (it == rotationKeys.begin()) return 0;
-    return std::distance(rotationKeys.begin(), it) - 1;
+    if (it == rotationKeys.end()) {
+        return rotationKeys.size() - 1;
+    }
+
+    if (it == rotationKeys.begin()) {
+        return 0;
+    }
+
+    return static_cast<size_t>(std::distance(rotationKeys.begin(), it) - 1);
 }
 
 size_t AnimationChannel::FindScaleKeyframe(float time) const {
+    if (scaleKeys.empty()) {
+        return 0;
+    }
+
     auto it = std::lower_bound(scaleKeys.begin(), scaleKeys.end(), time,
-        [](const ScaleKeyframe& key, float time) {
-            return key.time < time;
+        [](const ScaleKeyframe& keyframe, float t) {
+            return keyframe.time < t;
         });
 
-    if (it == scaleKeys.begin()) return 0;
-    return std::distance(scaleKeys.begin(), it) - 1;
+    if (it == scaleKeys.end()) {
+        return scaleKeys.size() - 1;
+    }
+
+    if (it == scaleKeys.begin()) {
+        return 0;
+    }
+
+    return static_cast<size_t>(std::distance(scaleKeys.begin(), it) - 1);
 }
 
-// AnimationClip implementations
+// AnimationClip implementation
 AnimationClip::AnimationClip(const std::string& name)
     : m_name(name)
     , m_duration(0.0f)
@@ -174,7 +226,7 @@ AnimationClip::AnimationClip(const std::string& name)
 void AnimationClip::AddChannel(const AnimationChannel& channel) {
     m_channels.push_back(channel);
 
-    // Update duration if necessary
+    // Update duration based on channel keyframes
     float channelDuration = 0.0f;
 
     if (!channel.positionKeys.empty()) {
@@ -211,55 +263,74 @@ AnimationChannel* AnimationClip::FindChannel(int boneIndex) {
 }
 
 void AnimationClip::SampleAnimation(float time, std::vector<DirectX::XMMATRIX>& boneTransforms) const {
-    // Ensure bone transforms array is large enough
-    size_t maxBoneIndex = 0;
-    for (const auto& channel : m_channels) {
-        if (channel.boneIndex >= 0) {
-            maxBoneIndex = std::max(maxBoneIndex, static_cast<size_t>(channel.boneIndex));
-        }
+    if (boneTransforms.empty()) {
+        Logger::GetInstance().LogWarning("AnimationClip::SampleAnimation - Empty bone transforms array");
+        return;
     }
 
-    if (boneTransforms.size() <= maxBoneIndex) {
-        boneTransforms.resize(maxBoneIndex + 1, DirectX::XMMatrixIdentity());
+    // Normalize time to animation duration
+    float normalizedTime = NormalizeTime(time);
+
+    // Initialize all bone transforms to identity
+    for (auto& transform : boneTransforms) {
+        transform = XMMatrixIdentity();
     }
 
-    // Sample each channel
+    // Sample each channel and apply to corresponding bone
     for (const auto& channel : m_channels) {
         if (channel.boneIndex >= 0 && channel.boneIndex < static_cast<int>(boneTransforms.size())) {
-            boneTransforms[channel.boneIndex] = channel.SampleTransform(time);
+            boneTransforms[channel.boneIndex] = channel.SampleTransform(normalizedTime);
         }
     }
 }
 
 float AnimationClip::NormalizeTime(float time) const {
-    return std::max(0.0f, std::min(time, m_duration));
+    if (m_duration <= 0.0f) {
+        return 0.0f;
+    }
+
+    return std::clamp(time, 0.0f, m_duration);
 }
 
 float AnimationClip::LoopTime(float time) const {
-    if (m_duration <= 0.0f) return 0.0f;
+    if (m_duration <= 0.0f) {
+        return 0.0f;
+    }
 
-    float normalizedTime = fmod(time, m_duration);
-    return (normalizedTime < 0.0f) ? normalizedTime + m_duration : normalizedTime;
+    // Handle negative time
+    if (time < 0.0f) {
+        time = m_duration + fmod(time, m_duration);
+    }
+
+    return fmod(time, m_duration);
 }
 
 bool AnimationClip::IsValid() const {
-    if (m_name.empty() || m_duration <= 0.0f || m_channels.empty()) {
+    if (m_name.empty()) {
         return false;
     }
 
-    // Check that all channels have valid bone indices
+    if (m_duration <= 0.0f) {
+        return false;
+    }
+
+    if (m_channels.empty()) {
+        return false;
+    }
+
+    // Check if all channels have valid data
     for (const auto& channel : m_channels) {
-        if (channel.boneIndex < 0) {
-            LOG_WARNING("Animation channel '" << channel.boneName << "' has invalid bone index");
+        if (channel.boneName.empty() && channel.boneIndex < 0) {
+            return false;
         }
 
-        if (channel.positionKeys.empty() && channel.rotationKeys.empty() && channel.scaleKeys.empty()) {
-            LOG_WARNING("Animation channel '" << channel.boneName << "' has no keyframes");
+        // At least one type of keyframe should exist
+        if (channel.positionKeys.empty() &&
+            channel.rotationKeys.empty() &&
+            channel.scaleKeys.empty()) {
+            return false;
         }
     }
 
     return true;
 }
-
-} // namespace Animation
-} // namespace GameEngine

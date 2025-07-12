@@ -1,85 +1,101 @@
 #include "AssimpLoader.h"
 #include "../Core/Logger.h"
 #include "../Renderer/D3D11Renderer.h"
+#include "../Renderer/Texture.h"
 #include <filesystem>
+#include <algorithm>
 
-namespace GameEngine {
-namespace Mesh {
+using namespace GameEngine::Mesh;
+using namespace GameEngine::Core;
 
 #ifdef ASSIMP_ENABLED
 
 AssimpLoader::AssimpLoader()
     : m_hasAnimations(false)
 {
-    // Configure Assimp importer
+    // Configure Assimp importer for optimal loading
+    m_importer.SetPropertyInteger(AI_CONFIG_PP_LBW_MAX_WEIGHTS, 4);
     m_importer.SetPropertyInteger(AI_CONFIG_PP_SBP_REMOVE,
         aiPrimitiveType_POINT | aiPrimitiveType_LINE);
 }
 
-AssimpLoader::~AssimpLoader() {
-    // Assimp cleanup is handled automatically
-}
+AssimpLoader::~AssimpLoader() = default;
 
 bool AssimpLoader::LoadMesh(const std::string& filename, std::shared_ptr<Mesh>& outMesh,
                            Renderer::D3D11Renderer* renderer) {
     if (!renderer) {
-        LOG_ERROR("Renderer is null");
+        Logger::GetInstance().LogError("AssimpLoader::LoadMesh - Renderer is null");
         return false;
     }
 
-    LOG_INFO("Loading mesh from file: " << filename);
+    if (!std::filesystem::exists(filename)) {
+        Logger::GetInstance().LogError("AssimpLoader::LoadMesh - File not found: " + filename);
+        return false;
+    }
 
-    // Clear previous data
-    m_bones.clear();
-    m_animations.clear();
-    m_boneMapping.clear();
-    m_hasAnimations = false;
-    m_currentDirectory = GetDirectory(filename);
+    Logger::GetInstance().LogInfo("Loading mesh: " + filename);
 
-    // Load the file
+    // Import the file with post-processing
     const aiScene* scene = m_importer.ReadFile(filename,
         aiProcess_Triangulate |
         aiProcess_FlipUVs |
         aiProcess_CalcTangentSpace |
-        aiProcess_GenSmoothNormals |
+        aiProcess_GenNormals |
         aiProcess_JoinIdenticalVertices |
         aiProcess_ImproveCacheLocality |
         aiProcess_LimitBoneWeights |
-        aiProcess_RemoveRedundantMaterials |
         aiProcess_SplitLargeMeshes |
         aiProcess_ValidateDataStructure |
         aiProcess_OptimizeMeshes
     );
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-        LOG_ERROR("Assimp error: " << m_importer.GetErrorString());
+        Logger::GetInstance().LogError("AssimpLoader - Assimp error: " + std::string(m_importer.GetErrorString()));
         return false;
     }
 
-    // Create mesh object
-    std::string meshName = std::filesystem::path(filename).stem().string();
-    outMesh = std::make_shared<Mesh>(meshName);
+    // Store current directory for relative path resolution
+    m_currentDirectory = GetDirectory(filename);
 
-    // Process animations first to determine if this is an animated mesh
-    ProcessAnimations(scene);
+    // Initialize mesh
+    outMesh = std::make_shared<Mesh>();
+    m_bones.clear();
+    m_boneMapping.clear();
+    m_animations.clear();
+    m_hasAnimations = false;
 
-    // Process the scene
-    ProcessNode(scene->mRootNode, scene, outMesh, renderer);
-
-    if (m_hasAnimations) {
-        LOG_INFO("Loaded animated mesh '" << meshName << "' with " << m_bones.size() << " bones and "
-                << m_animations.size() << " animations");
-    } else {
-        LOG_INFO("Loaded static mesh '" << meshName << "'");
+    // Check for animations first
+    if (scene->mNumAnimations > 0) {
+        m_hasAnimations = true;
+        ProcessAnimations(scene);
+        Logger::GetInstance().LogInfo("Found " + std::to_string(scene->mNumAnimations) + " animations");
     }
 
+    // Process materials
+    std::vector<std::shared_ptr<Material>> materials;
+    ProcessMaterials(scene, m_currentDirectory, materials, renderer);
+
+    // Process the root node
+    ProcessNode(scene->mRootNode, scene, outMesh, renderer);
+
+    // Set materials on mesh
+    outMesh->SetMaterials(materials);
+
+    // If we have animations, setup bone data
+    if (m_hasAnimations) {
+        outMesh->SetBones(m_bones);
+        outMesh->SetAnimated(true);
+        Logger::GetInstance().LogInfo("Mesh loaded with " + std::to_string(m_bones.size()) + " bones");
+    }
+
+    Logger::GetInstance().LogInfo("Mesh loaded successfully: " + filename);
     return true;
 }
 
 void AssimpLoader::ProcessNode(aiNode* node, const aiScene* scene, std::shared_ptr<Mesh> mesh,
                               Renderer::D3D11Renderer* renderer) {
-    // Process all meshes in current node
-    for (UINT i = 0; i < node->mNumMeshes; i++) {
+    // Process all meshes in this node
+    for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         aiMesh* assimpMesh = scene->mMeshes[node->mMeshes[i]];
 
         std::vector<Vertex> vertices;
@@ -89,27 +105,16 @@ void AssimpLoader::ProcessNode(aiNode* node, const aiScene* scene, std::shared_p
 
         ProcessMesh(assimpMesh, scene, vertices, skinnedVertices, indices, hasAnimations);
 
-        // Create the mesh with appropriate data
+        // Create submesh
         if (hasAnimations && !skinnedVertices.empty()) {
-            mesh->CreateFromSkinnedData(skinnedVertices, indices, renderer);
-            m_hasAnimations = true;
+            mesh->AddSkinnedSubmesh(skinnedVertices, indices, assimpMesh->mMaterialIndex, renderer);
         } else if (!vertices.empty()) {
-            mesh->CreateFromData(vertices, indices, renderer);
-        }
-
-        // Process materials
-        if (assimpMesh->mMaterialIndex >= 0) {
-            std::vector<std::shared_ptr<Material>> materials;
-            ProcessMaterials(scene, m_currentDirectory, materials, renderer);
-
-            if (assimpMesh->mMaterialIndex < materials.size()) {
-                mesh->SetMaterial(materials[assimpMesh->mMaterialIndex]);
-            }
+            mesh->AddSubmesh(vertices, indices, assimpMesh->mMaterialIndex, renderer);
         }
     }
 
-    // Process children recursively
-    for (UINT i = 0; i < node->mNumChildren; i++) {
+    // Process child nodes recursively
+    for (unsigned int i = 0; i < node->mNumChildren; i++) {
         ProcessNode(node->mChildren[i], scene, mesh, renderer);
     }
 }
@@ -117,21 +122,26 @@ void AssimpLoader::ProcessNode(aiNode* node, const aiScene* scene, std::shared_p
 void AssimpLoader::ProcessMesh(aiMesh* mesh, const aiScene* scene, std::vector<Vertex>& vertices,
                               std::vector<SkinnedVertex>& skinnedVertices, std::vector<UINT>& indices,
                               bool& hasAnimations) {
+    hasAnimations = mesh->HasBones() && m_hasAnimations;
 
-    hasAnimations = (mesh->mNumBones > 0);
-
+    // Reserve space for efficiency
     if (hasAnimations) {
-        // Process skinned vertices
         skinnedVertices.reserve(mesh->mNumVertices);
+    } else {
+        vertices.reserve(mesh->mNumVertices);
+    }
+    indices.reserve(mesh->mNumFaces * 3);
 
-        for (UINT i = 0; i < mesh->mNumVertices; i++) {
+    // Process vertices
+    for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
+        if (hasAnimations) {
             SkinnedVertex vertex;
 
             // Position
             vertex.position = ConvertVector3(mesh->mVertices[i]);
 
             // Normal
-            if (mesh->mNormals) {
+            if (mesh->HasNormals()) {
                 vertex.normal = ConvertVector3(mesh->mNormals[i]);
             } else {
                 vertex.normal = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
@@ -149,22 +159,14 @@ void AssimpLoader::ProcessMesh(aiMesh* mesh, const aiScene* scene, std::vector<V
             vertex.boneIndices = DirectX::XMUINT4(0, 0, 0, 0);
 
             skinnedVertices.push_back(vertex);
-        }
-
-        // Process bones
-        ProcessBones(mesh, skinnedVertices);
-    } else {
-        // Process regular vertices
-        vertices.reserve(mesh->mNumVertices);
-
-        for (UINT i = 0; i < mesh->mNumVertices; i++) {
+        } else {
             Vertex vertex;
 
             // Position
             vertex.position = ConvertVector3(mesh->mVertices[i]);
 
             // Normal
-            if (mesh->mNormals) {
+            if (mesh->HasNormals()) {
                 vertex.normal = ConvertVector3(mesh->mNormals[i]);
             } else {
                 vertex.normal = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
@@ -181,65 +183,86 @@ void AssimpLoader::ProcessMesh(aiMesh* mesh, const aiScene* scene, std::vector<V
         }
     }
 
+    // Process bone weights for skinned meshes
+    if (hasAnimations) {
+        ProcessBones(mesh, skinnedVertices);
+    }
+
     // Process indices
-    indices.reserve(mesh->mNumFaces * 3);
-    for (UINT i = 0; i < mesh->mNumFaces; i++) {
+    for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
         aiFace face = mesh->mFaces[i];
-        for (UINT j = 0; j < face.mNumIndices; j++) {
-            indices.push_back(face.mIndices[j]);
+        if (face.mNumIndices == 3) {  // We only support triangles
+            indices.push_back(face.mIndices[0]);
+            indices.push_back(face.mIndices[1]);
+            indices.push_back(face.mIndices[2]);
         }
     }
 }
 
 void AssimpLoader::ProcessBones(aiMesh* mesh, std::vector<SkinnedVertex>& vertices) {
-    for (UINT i = 0; i < mesh->mNumBones; i++) {
+    for (unsigned int i = 0; i < mesh->mNumBones; i++) {
         aiBone* bone = mesh->mBones[i];
-        std::string boneName = bone->mName.data;
+        std::string boneName = bone->mName.C_Str();
 
         int boneIndex = FindBone(boneName);
         if (boneIndex == -1) {
             // Add new bone
             DirectX::XMMATRIX offsetMatrix = ConvertMatrix(bone->mOffsetMatrix);
             AddBone(boneName, offsetMatrix);
-            boneIndex = static_cast<int>(m_bones.size()) - 1;
+            boneIndex = static_cast<int>(m_bones.size() - 1);
         }
 
         // Apply bone weights to vertices
-        for (UINT j = 0; j < bone->mNumWeights; j++) {
-            UINT vertexID = bone->mWeights[j].mVertexId;
+        for (unsigned int j = 0; j < bone->mNumWeights; j++) {
+            unsigned int vertexId = bone->mWeights[j].mVertexId;
             float weight = bone->mWeights[j].mWeight;
 
-            if (vertexID < vertices.size()) {
-                vertices[vertexID].AddBoneData(boneIndex, weight);
+            if (vertexId < vertices.size()) {
+                SkinnedVertex& vertex = vertices[vertexId];
+
+                // Find first empty weight slot
+                float* weights = &vertex.boneWeights.x;
+                unsigned int* indices = &vertex.boneIndices.x;
+
+                for (int k = 0; k < 4; k++) {
+                    if (weights[k] == 0.0f) {
+                        weights[k] = weight;
+                        indices[k] = static_cast<unsigned int>(boneIndex);
+                        break;
+                    }
+                }
             }
         }
     }
 
     // Normalize bone weights
     for (auto& vertex : vertices) {
-        vertex.NormalizeWeights();
+        float totalWeight = vertex.boneWeights.x + vertex.boneWeights.y +
+                           vertex.boneWeights.z + vertex.boneWeights.w;
+
+        if (totalWeight > 0.0f) {
+            vertex.boneWeights.x /= totalWeight;
+            vertex.boneWeights.y /= totalWeight;
+            vertex.boneWeights.z /= totalWeight;
+            vertex.boneWeights.w /= totalWeight;
+        }
     }
 }
 
 void AssimpLoader::ProcessAnimations(const aiScene* scene) {
-    m_animations.reserve(scene->mNumAnimations);
-
-    for (UINT i = 0; i < scene->mNumAnimations; i++) {
+    for (unsigned int i = 0; i < scene->mNumAnimations; i++) {
         aiAnimation* animation = scene->mAnimations[i];
 
         AnimationData animData;
-        animData.name = animation->mName.data;
+        animData.name = animation->mName.C_Str();
         animData.duration = static_cast<float>(animation->mDuration);
         animData.ticksPerSecond = static_cast<float>(animation->mTicksPerSecond);
 
         if (animData.ticksPerSecond == 0.0f) {
-            animData.ticksPerSecond = 25.0f; // Default ticks per second
+            animData.ticksPerSecond = 25.0f; // Default value
         }
 
         m_animations.push_back(animData);
-
-        LOG_INFO("Found animation: " << animData.name << " (Duration: " <<
-                animData.duration << ", TPS: " << animData.ticksPerSecond << ")");
     }
 }
 
@@ -248,10 +271,78 @@ void AssimpLoader::ProcessMaterials(const aiScene* scene, const std::string& dir
                                    Renderer::D3D11Renderer* renderer) {
     materials.reserve(scene->mNumMaterials);
 
-    for (UINT i = 0; i < scene->mNumMaterials; i++) {
+    for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
         aiMaterial* mat = scene->mMaterials[i];
-        materials.push_back(LoadMaterial(mat, directory, renderer));
+        auto material = LoadMaterial(mat, directory, renderer);
+        materials.push_back(material);
     }
+}
+
+std::shared_ptr<Material> AssimpLoader::LoadMaterial(aiMaterial* mat, const std::string& directory,
+                                                    Renderer::D3D11Renderer* renderer) {
+    auto material = std::make_shared<Material>();
+
+    // Get material name
+    aiString name;
+    if (mat->Get(AI_MATKEY_NAME, name) == AI_SUCCESS) {
+        material->SetName(name.C_Str());
+    }
+
+    // Get diffuse color
+    aiColor3D color;
+    if (mat->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
+        material->SetDiffuseColor(DirectX::XMFLOAT3(color.r, color.g, color.b));
+    }
+
+    // Get specular color
+    if (mat->Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS) {
+        material->SetSpecularColor(DirectX::XMFLOAT3(color.r, color.g, color.b));
+    }
+
+    // Get shininess
+    float shininess;
+    if (mat->Get(AI_MATKEY_SHININESS, shininess) == AI_SUCCESS) {
+        material->SetShininess(shininess);
+    }
+
+    // Load diffuse texture
+    if (mat->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+        aiString texturePath;
+        if (mat->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
+            std::string fullPath = directory + "/" + texturePath.C_Str();
+            std::wstring wPath(fullPath.begin(), fullPath.end());
+
+            // Try to load texture
+            auto& textureManager = Renderer::TextureManager::GetInstance();
+            auto texture = textureManager.LoadTexture(wPath, renderer->GetDevice());
+
+            if (texture) {
+                material->SetDiffuseTexture(texture);
+                Logger::GetInstance().LogInfo("Loaded diffuse texture: " + fullPath);
+            } else {
+                Logger::GetInstance().LogWarning("Failed to load diffuse texture: " + fullPath);
+            }
+        }
+    }
+
+    // Load normal map
+    if (mat->GetTextureCount(aiTextureType_NORMALS) > 0) {
+        aiString texturePath;
+        if (mat->GetTexture(aiTextureType_NORMALS, 0, &texturePath) == AI_SUCCESS) {
+            std::string fullPath = directory + "/" + texturePath.C_Str();
+            std::wstring wPath(fullPath.begin(), fullPath.end());
+
+            auto& textureManager = Renderer::TextureManager::GetInstance();
+            auto texture = textureManager.LoadTexture(wPath, renderer->GetDevice());
+
+            if (texture) {
+                material->SetNormalTexture(texture);
+                Logger::GetInstance().LogInfo("Loaded normal texture: " + fullPath);
+            }
+        }
+    }
+
+    return material;
 }
 
 int AssimpLoader::FindBone(const std::string& boneName) {
@@ -266,6 +357,7 @@ void AssimpLoader::AddBone(const std::string& boneName, const DirectX::XMMATRIX&
     BoneInfo bone;
     bone.name = boneName;
     bone.offsetMatrix = offsetMatrix;
+    bone.parentIndex = -1; // Will be set up later if needed
 
     int boneIndex = static_cast<int>(m_bones.size());
     m_bones.push_back(bone);
@@ -273,43 +365,8 @@ void AssimpLoader::AddBone(const std::string& boneName, const DirectX::XMMATRIX&
 }
 
 std::string AssimpLoader::GetDirectory(const std::string& filepath) {
-    return std::filesystem::path(filepath).parent_path().string();
-}
-
-std::shared_ptr<Material> AssimpLoader::LoadMaterial(aiMaterial* mat, const std::string& directory,
-                                                    Renderer::D3D11Renderer* renderer) {
-    aiString name;
-    mat->Get(AI_MATKEY_NAME, name);
-
-    auto material = std::make_shared<Material>(name.C_Str());
-
-    // Load diffuse texture
-    aiString texturePath;
-    if (mat->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
-        std::string fullPath = directory + "/" + texturePath.data;
-        material->LoadDiffuseTexture(renderer->GetDevice(), fullPath);
-    }
-
-    // Load material properties
-    aiColor3D color;
-    if (mat->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
-        material->SetDiffuse(DirectX::XMFLOAT3(color.r, color.g, color.b));
-    }
-
-    if (mat->Get(AI_MATKEY_COLOR_AMBIENT, color) == AI_SUCCESS) {
-        material->SetAmbient(DirectX::XMFLOAT3(color.r, color.g, color.b));
-    }
-
-    if (mat->Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS) {
-        material->SetSpecular(DirectX::XMFLOAT3(color.r, color.g, color.b));
-    }
-
-    float shininess;
-    if (mat->Get(AI_MATKEY_SHININESS, shininess) == AI_SUCCESS) {
-        material->SetSpecularPower(shininess);
-    }
-
-    return material;
+    std::filesystem::path path(filepath);
+    return path.parent_path().string();
 }
 
 // Static utility functions
@@ -330,24 +387,4 @@ DirectX::XMFLOAT2 AssimpLoader::ConvertVector2(const aiVector3D& vector) {
     return DirectX::XMFLOAT2(vector.x, vector.y);
 }
 
-#else
-
-// Implementation when Assimp is not available
-AssimpLoader::AssimpLoader() {
-    LOG_WARNING("AssimpLoader created but Assimp is not enabled. Model loading will not work.");
-}
-
-AssimpLoader::~AssimpLoader() {
-}
-
-bool AssimpLoader::LoadMesh(const std::string& filename, std::shared_ptr<Mesh>& outMesh,
-                           Renderer::D3D11Renderer* renderer) {
-    LOG_ERROR("Cannot load mesh '" << filename << "' - Assimp is not enabled in this build.");
-    LOG_INFO("To enable Assimp: clone https://github.com/assimp/assimp.git to Dependencies/assimp/");
-    return false;
-}
-
 #endif // ASSIMP_ENABLED
-
-} // namespace Mesh
-} // namespace GameEngine

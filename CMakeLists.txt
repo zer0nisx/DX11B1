@@ -146,6 +146,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     "Source/Scene"
     "Source/Input"
     "Source/Math"
+    "Dependencies/rapidxml"
 )
 
 # Configuraciones por build type
