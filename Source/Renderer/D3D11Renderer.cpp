@@ -82,6 +82,20 @@ bool D3D11Renderer::Initialize(HWND hwnd, int width, int height, bool fullscreen
     float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     m_context->OMSetBlendState(m_blendState.Get(), blendFactor, 0xffffffff);
 
+    // Initialize lighting system
+    m_lightManager = std::make_unique<LightManager>();
+    if (!m_lightManager) {
+        LOG_ERROR("Failed to create LightManager");
+        return false;
+    }
+
+    // Create light buffer
+    m_lightBuffer = CreateConstantBuffer(sizeof(LightBuffer));
+    if (!m_lightBuffer) {
+        LOG_ERROR("Failed to create light buffer");
+        return false;
+    }
+
     m_initialized = true;
     LOG_INFO("D3D11 Renderer initialized successfully");
 
@@ -97,6 +111,10 @@ void D3D11Renderer::Shutdown() {
     if (m_context) {
         m_context->ClearState();
     }
+
+    // Cleanup lighting system
+    m_lightManager.reset();
+    m_lightBuffer.Reset();
 
     m_initialized = false;
     LOG_INFO("D3D11 Renderer shutdown complete");
@@ -481,6 +499,58 @@ void D3D11Renderer::CleanupRenderTargets() {
     m_renderTargetView.Reset();
     m_depthStencilView.Reset();
     m_depthStencilBuffer.Reset();
+}
+
+void D3D11Renderer::UpdateLightBuffer(const LightManager& lightManager, const Math::Vector3& cameraPosition) {
+    if (!m_lightBuffer || !m_context) {
+        LOG_WARNING("Light buffer or context is null");
+        return;
+    }
+
+    // Prepare light data for shaders
+    auto lightData = lightManager.PrepareShaderData(8); // Max 8 lights for demo
+
+    if (lightData.empty()) {
+        // No lights, set default ambient
+        LightBuffer defaultBuffer = {};
+        defaultBuffer.ambientLight = DirectX::XMFLOAT4(0.1f, 0.1f, 0.15f, 0.3f);
+
+        D3D11_MAPPED_SUBRESOURCE mappedResource;
+        HRESULT hr = m_context->Map(m_lightBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+        if (SUCCEEDED(hr)) {
+            memcpy(mappedResource.pData, &defaultBuffer, sizeof(LightBuffer));
+            m_context->Unmap(m_lightBuffer.Get(), 0);
+        }
+        return;
+    }
+
+    // Use first light for now (can be extended for multiple lights)
+    const auto& firstLight = lightData[0];
+
+    LightBuffer lightBuffer = {};
+
+    // Convert LightData to LightBuffer format
+    lightBuffer.lightDirection = firstLight.direction;
+    lightBuffer.lightColor = firstLight.color;
+    lightBuffer.lightPosition = firstLight.position;
+    lightBuffer.lightParams = firstLight.shadowParams;
+    lightBuffer.lightSpaceMatrix = firstLight.lightSpaceMatrix;
+    lightBuffer.ambientLight = DirectX::XMFLOAT4(0.1f, 0.1f, 0.15f, 0.3f);
+
+    // Map and update the buffer
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    HRESULT hr = m_context->Map(m_lightBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    if (SUCCEEDED(hr)) {
+        memcpy(mappedResource.pData, &lightBuffer, sizeof(LightBuffer));
+        m_context->Unmap(m_lightBuffer.Get(), 0);
+
+        // Bind to pixel shader (slot 1, after constant buffer)
+        m_context->PSSetConstantBuffers(1, 1, m_lightBuffer.GetAddressOf());
+
+        LOG_DEBUG("Light buffer updated successfully");
+    } else {
+        LOG_ERROR("Failed to map light buffer");
+    }
 }
 
 } // namespace Renderer

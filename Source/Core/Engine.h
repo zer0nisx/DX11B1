@@ -36,6 +36,10 @@ public:
     void SetCameraTarget(const Math::Vector3& target) { m_cameraTarget = target; UpdateViewMatrix(); }
     void SetCameraUp(const Math::Vector3& up) { m_cameraUp = up; UpdateViewMatrix(); }
 
+    const Math::Vector3& GetCameraPosition() const { return m_cameraPosition; }
+    const Math::Vector3& GetCameraTarget() const { return m_cameraTarget; }
+    const Math::Vector3& GetCameraUp() const { return m_cameraUp; }
+
     const Math::Matrix4& GetViewMatrix() const { return m_viewMatrix; }
     const Math::Matrix4& GetProjectionMatrix() const { return m_projectionMatrix; }
 
