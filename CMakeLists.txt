@@ -48,6 +48,15 @@ file(GLOB_RECURSE SCENE_SOURCES "Source/Scene/*.cpp" "Source/Scene/*.h")
 file(GLOB_RECURSE INPUT_SOURCES "Source/Input/*.cpp" "Source/Input/*.h")
 file(GLOB_RECURSE MATH_SOURCES "Source/Math/*.h")
 
+# Verificar que los directorios existen
+if(EXISTS "${CMAKE_SOURCE_DIR}/Source/Scene")
+    message(STATUS "Scene system found")
+endif()
+
+if(EXISTS "${CMAKE_SOURCE_DIR}/Source/Input")
+    message(STATUS "Input system found")
+endif()
+
 # Main source
 set(MAIN_SOURCES "Source/main.cpp")
 

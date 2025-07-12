@@ -1,90 +1,65 @@
-# TODOs - Motor de Juego DirectX 11
+# DX11B1 Game Engine - Phase 5 Implementation Plan
 
-## Tareas Completadas ✅
-- [x] Planificación general del motor
-- [x] Arquitectura de módulos definida
-- [x] Estructura de directorios planificada
-- [x] Detalles técnicos de implementación documentados
-- [x] **CMakeLists.txt y configuración del proyecto**
-- [x] **Clases matemáticas (Vector3, Matrix4)**
-- [x] **Sistema de logging completo**
-- [x] **Sistema de timer y FPS**
-- [x] **Clase Window con Win32**
-- [x] **Renderer DirectX 11 completo**
-- [x] **Clase Engine principal**
-- [x] **Shaders HLSL básicos**
-- [x] **Estructuras de vértices**
-- [x] **Sistema de materiales básico**
-- [x] **Clase Mesh con primitivas (cubo, esfera, plano)**
-- [x] **Aplicación de prueba (main.cpp)**
-- [x] **README.md documentación**
+## ✅ COMPLETED PHASES
+- [x] **Phase 2**: Assimp Integration & Skeletal Animation (85%)
+- [x] **Phase 3**: Scene Manager & Input Systems (100%)
+- [x] **Phase 4**: Advanced Animation System (90%)
 
-## En Progreso - Fase 2: Integración Assimp 🚧
-- [ ] **Configurar Assimp en CMakeLists.txt**
-- [ ] **Crear clase AssimpLoader**
-- [ ] **Implementar carga de archivos .x**
-- [ ] **Conversión de datos Assimp a formato interno**
-- [ ] **Testing con modelos .x básicos**
+## 🚧 Phase 5: IN PROGRESS - Advanced Rendering & Engine Features
 
-## Próximas Tareas Prioritarias
+### Shadow Mapping System
+- [ ] Shadow map generation
+- [ ] Directional light shadows
+- [ ] Point light shadows
+- [ ] Shadow filtering (PCF)
+- [ ] Cascade shadow maps
 
-### Fase 3: Sistema de Animaciones
-- [ ] **Estructura de Bones y Skeleton**
-- [ ] **AnimationClip y keyframe system**
-- [ ] **Skinning implementation**
-- [ ] **AnimationManager**
-- [ ] **Shaders de skinning funcionales**
+### Lighting System
+- [ ] Advanced lighting framework
+- [ ] Multiple light types (directional, point, spot)
+- [ ] Light culling and batching
+- [ ] Deferred lighting preparation
+- [ ] HDR lighting support
 
-### Fase 4: Mejoras y Optimización
-- [ ] **Carga real de texturas (DirectXTex/WIC)**
-- [ ] **Sistema de input más avanzado**
-- [ ] **Scene Manager básico**
-- [ ] **Optimizaciones de rendering**
+### Asset Management
+- [ ] Asset loading pipeline
+- [ ] Resource caching system
+- [ ] Asset streaming
+- [ ] Texture management
+- [ ] Model asset system
 
-## Estado del Proyecto 📊
+### Post-Processing Pipeline
+- [ ] Render target management
+- [ ] Bloom effect
+- [ ] Tone mapping
+- [ ] FXAA/Anti-aliasing
+- [ ] Screen-space effects
 
-### Funcionalidades Core: 95% ✅
-- Engine, Window, Logger, Timer, Math → **COMPLETO**
-- Renderer DirectX 11 → **COMPLETO**
-- Mesh system básico → **COMPLETO**
+### Performance Optimizations
+- [ ] Frustum culling
+- [ ] LOD system
+- [ ] Mesh batching
+- [ ] Instanced rendering
+- [ ] GPU profiling integration
 
-### Funcionalidades Gráficas: 75% ✅
-- Shaders básicos → **COMPLETO**
-- Material system → **80% (falta carga de texturas)**
-- Primitive rendering → **COMPLETO**
+## 📋 Phase 6: PLANNED - Production Features
 
-### Funcionalidades Avanzadas: 10% 🚧
-- Assimp integration → **EN PROGRESO**
-- Animation system → **0% (futuro)**
-- Scene management → **0% (futuro)**
+### Audio System
+- [ ] 3D audio integration
+- [ ] Audio source components
+- [ ] Background music system
+- [ ] Sound effect management
 
-## Notas de Desarrollo
+### Physics Integration
+- [ ] Physics world setup
+- [ ] Rigidbody components
+- [ ] Collision detection
+- [ ] Physics-animation sync
 
-### Logros Principales
-1. **Arquitectura sólida**: Sistema modular y extensible
-2. **DirectX 11 funcional**: Pipeline completo de renderizado
-3. **Gestión de recursos**: Smart pointers y RAII
-4. **Debugging**: Sistema de logging robusto
-5. **Testing**: Aplicación de prueba con primitivas
+### Editor Tools
+- [ ] Scene inspector
+- [ ] Entity hierarchy view
+- [ ] Component editor
+- [ ] Asset browser
 
-### Decisiones Técnicas Importantes
-- ✅ **ComPtr** para recursos DirectX
-- ✅ **Smart pointers** para gestión de memoria
-- ✅ **Singleton pattern** para managers
-- ✅ **Event callbacks** para ventana
-- ✅ **Template-based** resource management
-
-### Próximos Hitos
-1. **Milestone 2**: Cargar primer modelo .x con Assimp
-2. **Milestone 3**: Reproducir primera animación
-3. **Milestone 4**: Motor completo con ejemplos
-
-## Motor Ya Funcional! 🎉
-
-El motor DX11 ya está **funcionalmente completo** para renderizado básico:
-- Puede renderizar primitivas 3D
-- Tiene sistema de cámara funcional
-- Shaders y materiales básicos
-- Arquitectura lista para extensión
-
-**¡Ya se puede usar para proyectos básicos de renderizado 3D!**
+## Current Target: Lighting & Shadow System Implementation
