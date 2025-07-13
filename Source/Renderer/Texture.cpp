@@ -5,6 +5,8 @@
 #include <d3d11.h>
 #include <DirectXMath.h>
 #include <algorithm>
+#include <codecvt>
+#include <locale>
 
 using namespace GameEngine::Renderer;
 using namespace GameEngine::Core;
@@ -39,11 +41,13 @@ bool Texture::LoadFromFile(const std::wstring& filename, ID3D11Device* device) {
     if (success) {
         m_filename = filename;
         // Convert wstring to string properly
-        std::string filenameStr(filename.begin(), filename.end());
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        std::string filenameStr = converter.to_bytes(filename);
         Logger::GetInstance().LogInfo("Texture loaded successfully: " + filenameStr);
     } else {
         // Convert wstring to string properly
-        std::string filenameStr(filename.begin(), filename.end());
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        std::string filenameStr = converter.to_bytes(filename);
         Logger::GetInstance().LogError("Failed to load texture: " + filenameStr);
     }
 

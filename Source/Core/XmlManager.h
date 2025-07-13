@@ -7,7 +7,6 @@
 #include <functional>
 #include "rapidxml.hpp"
 #include "rapidxml_utils.hpp"
-#include "rapidxml_print.hpp"
 
 namespace GameEngine {
 namespace Core {
@@ -164,6 +163,7 @@ private:
 
     char* AllocateString(const std::string& str);
     void ClearAllocatedStrings();
+    void PrintNode(const rapidxml::xml_node<>* node, std::string& result, int indent, bool formatted) const;
 };
 
 // XML Manager for high-level operations

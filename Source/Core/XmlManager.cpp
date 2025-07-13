@@ -402,17 +402,58 @@ std::string XmlDocument::SaveToString(bool formatted) const {
 
     try {
         std::string result;
-
-        if (formatted) {
-            rapidxml::print(std::back_inserter(result), m_document, 0);
-        } else {
-            rapidxml::print(std::back_inserter(result), m_document, rapidxml::print_no_indenting);
-        }
-
+        PrintNode(&m_document, result, 0, formatted);
         return result;
     } catch (const std::exception& e) {
         Logger::GetInstance().LogError("XmlDocument::SaveToString - Exception: " + std::string(e.what()));
         return "";
+    }
+}
+
+void XmlDocument::PrintNode(const rapidxml::xml_node<>* node, std::string& result, int indent, bool formatted) const {
+    if (!node) return;
+
+    std::string indentStr = formatted ? std::string(indent * 2, ' ') : "";
+
+    if (node->type() == rapidxml::node_element) {
+        result += indentStr + "<" + std::string(node->name(), node->name_size());
+
+        // Add attributes
+        for (auto attr = node->first_attribute(); attr; attr = attr->next_attribute()) {
+            result += " " + std::string(attr->name(), attr->name_size()) +
+                     "=\"" + std::string(attr->value(), attr->value_size()) + "\"";
+        }
+
+        if (node->first_node() || node->value_size() > 0) {
+            result += ">";
+
+            if (node->value_size() > 0) {
+                result += std::string(node->value(), node->value_size());
+            }
+
+            if (formatted && node->first_node()) result += "\n";
+
+            // Print child nodes
+            for (auto child = node->first_node(); child; child = child->next_sibling()) {
+                PrintNode(child, result, indent + 1, formatted);
+            }
+
+            if (formatted && node->first_node()) result += indentStr;
+            result += "</" + std::string(node->name(), node->name_size()) + ">";
+        } else {
+            result += "/>";
+        }
+
+        if (formatted) result += "\n";
+    } else if (node->type() == rapidxml::node_data) {
+        result += std::string(node->value(), node->value_size());
+    }
+
+    // Process sibling nodes at document level
+    if (indent == 0) {
+        for (auto sibling = node->next_sibling(); sibling; sibling = sibling->next_sibling()) {
+            PrintNode(sibling, result, indent, formatted);
+        }
     }
 }
 
