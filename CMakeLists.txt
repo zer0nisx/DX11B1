@@ -14,7 +14,26 @@ endif()
 set(CMAKE_PREFIX_PATH "C:/vcpkg/installed/x64-windows")
 
 # Source files organization
-file(GLOB_RECURSE CORE_SOURCES "Source/Core/*.cpp" "Source/Core/*.h")
+# Explicitly list source files to ensure all are included in build
+set(CORE_SOURCES
+    "Source/Core/ConfigManager.cpp"
+    "Source/Core/ConfigManager.h"
+    "Source/Core/Engine.cpp"
+    "Source/Core/Engine.h"
+    "Source/Core/FileSystem.cpp"
+    "Source/Core/FileSystem.h"
+    "Source/Core/Logger.cpp"
+    "Source/Core/Logger.h"
+    "Source/Core/SettingsInterface.cpp"
+    "Source/Core/SettingsInterface.h"
+    "Source/Core/Timer.cpp"
+    "Source/Core/Timer.h"
+    "Source/Core/Window.cpp"
+    "Source/Core/Window.h"
+    "Source/Core/XmlManager.cpp"
+    "Source/Core/XmlManager.h"
+)
+
 file(GLOB_RECURSE RENDERER_SOURCES "Source/Renderer/*.cpp" "Source/Renderer/*.h")
 file(GLOB_RECURSE MESH_SOURCES "Source/Mesh/*.cpp" "Source/Mesh/*.h")
 file(GLOB_RECURSE ANIMATION_SOURCES "Source/Animation/*.cpp" "Source/Animation/*.h")
