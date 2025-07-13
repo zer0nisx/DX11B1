@@ -5,6 +5,7 @@
 #include "Timer.h"
 #include "Logger.h"
 #include "Window.h"
+#include "ConfigManager.h"
 #include "../Renderer/D3D11Renderer.h"
 #include "../Mesh/MeshManager.h"
 #include "../Math/Matrix4.h"
@@ -17,10 +18,24 @@ class Engine {
 public:
     Engine();
 
-    bool Initialize(HINSTANCE hInstance, const std::string& title = "DX11 Game Engine",
-                   int width = 1024, int height = 768, bool fullscreen = false);
+    // Initialize with configuration file
+    bool Initialize(HINSTANCE hInstance, const std::string& configFile = "config.xml");
+
+    // Initialize with manual parameters (legacy)
+    bool InitializeManual(HINSTANCE hInstance, const std::string& title = "DX11 Game Engine",
+                         int width = 1024, int height = 768, bool fullscreen = false);
+
     void Run();
     void Shutdown();
+
+    // Configuration management
+    bool LoadConfiguration(const std::string& configFile = "config.xml");
+    bool SaveConfiguration(const std::string& configFile = "");
+    void ReloadConfiguration();
+    bool ValidateConfiguration();
+
+    // Configuration access
+    ConfigManager& GetConfigManager() { return CONFIG_MANAGER; }
 
     // Getters
     Window& GetWindow() { return *m_window; }
@@ -56,6 +71,7 @@ protected:
     virtual void OnKeyboard(int key, bool isDown);
     virtual void OnMouseMove(int x, int y, bool dragging);
     virtual void OnMouseButton(int button, bool isDown);
+    virtual void OnConfigurationChanged() {}  // Called when config is reloaded
 
     virtual ~Engine();
 
@@ -76,7 +92,9 @@ protected:
     // Engine state
     bool m_isRunning;
     bool m_isInitialized;
+    bool m_configurationLoaded;
     HINSTANCE m_hInstance;
+    std::string m_configFile;
 
     // Camera
     Math::Vector3 m_cameraPosition;
@@ -96,6 +114,3 @@ protected:
 
 } // namespace Core
 } // namespace GameEngine
-
-// Macro for easier access to engine instance
-#define ENGINE GameEngine::Core::Engine::GetInstance()
