@@ -31,6 +31,9 @@ public:
     void SetMinLogLevel(LogLevel level) { m_minLogLevel = level; }
     LogLevel GetMinLogLevel() const { return m_minLogLevel; }
 
+    void SetEnabled(bool enabled) { m_enabled = enabled; }
+    bool IsEnabled() const { return m_enabled; }
+
 private:
     Logger() = default;
     ~Logger();
@@ -43,6 +46,7 @@ private:
     LogLevel m_minLogLevel = LogLevel::Info;
     std::mutex m_logMutex;
     bool m_initialized = false;
+    bool m_enabled = true;
 };
 
 // Macros for convenient logging

@@ -69,7 +69,7 @@ void Logger::LogError(const std::string& message) {
 }
 
 void Logger::Log(LogLevel level, const std::string& message) {
-    if (level < m_minLogLevel) {
+    if (!m_enabled || level < m_minLogLevel) {
         return;
     }
 

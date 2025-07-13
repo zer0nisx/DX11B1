@@ -1,6 +1,7 @@
 #include "ConfigManager.h"
 #include "Logger.h"
 #include "FileSystem.h"
+#include "../Input/InputManager.h"
 #include <sstream>
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
