@@ -7,49 +7,48 @@
 #include <mutex>
 
 namespace GameEngine {
-namespace Core {
+	namespace Core {
+		enum class LogLevel {
+			Debug = 0,
+			Info = 1,
+			Warning = 2,
+			Error = 3
+		};
 
-enum class LogLevel {
-    Debug = 0,
-    Info = 1,
-    Warning = 2,
-    Error = 3
-};
+		class Logger {
+		public:
+			static Logger& GetInstance();
 
-class Logger {
-public:
-    static Logger& GetInstance();
+			void Initialize(const std::string& filename = "engine.log", LogLevel minLevel = LogLevel::Info);
+			void Shutdown();
 
-    void Initialize(const std::string& filename = "engine.log", LogLevel minLevel = LogLevel::Info);
-    void Shutdown();
+			void LogDebug(const std::string& message);
+			void LogInfo(const std::string& message);
+			void LogWarning(const std::string& message);
+			void LogError(const std::string& message);
 
-    void LogDebug(const std::string& message);
-    void LogInfo(const std::string& message);
-    void LogWarning(const std::string& message);
-    void LogError(const std::string& message);
+			void SetMinLogLevel(LogLevel level) { m_minLogLevel = level; }
+			LogLevel GetMinLogLevel() const { return m_minLogLevel; }
 
-    void SetMinLogLevel(LogLevel level) { m_minLogLevel = level; }
-    LogLevel GetMinLogLevel() const { return m_minLogLevel; }
+			void SetEnabled(bool enabled) { m_enabled = enabled; }
+			bool IsEnabled() const { return m_enabled; }
 
-    void SetEnabled(bool enabled) { m_enabled = enabled; }
-    bool IsEnabled() const { return m_enabled; }
+		private:
+			Logger() = default;
+			~Logger();
 
-private:
-    Logger() = default;
-    ~Logger();
+			void Log(LogLevel level, const std::string& message);
+			std::string GetTimeStamp() const;
+			std::string LogLevelToString(LogLevel level) const;
 
-    void Log(LogLevel level, const std::string& message);
-    std::string GetTimeStamp() const;
-    std::string LogLevelToString(LogLevel level) const;
+			std::ofstream m_logFile;
+			LogLevel m_minLogLevel = LogLevel::Info;
+			std::recursive_mutex m_logMutex;
+			bool m_initialized = false;
+			bool m_enabled = true;
+		};
 
-    std::ofstream m_logFile;
-    LogLevel m_minLogLevel = LogLevel::Info;
-    std::mutex m_logMutex;
-    bool m_initialized = false;
-    bool m_enabled = true;
-};
-
-// Macros for convenient logging
+		// Macros for convenient logging
 #define LOG_DEBUG(msg) do { \
     std::stringstream ss; \
     ss << msg; \
@@ -73,6 +72,5 @@ private:
     ss << msg; \
     GameEngine::Core::Logger::GetInstance().LogError(ss.str()); \
 } while(0)
-
-} // namespace Core
+	} // namespace Core
 } // namespace GameEngine

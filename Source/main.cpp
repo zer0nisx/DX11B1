@@ -425,35 +425,21 @@ int main() {
 }
 
 // Windows entry point
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-	// Enable console for debugging
-#ifdef _DEBUG
-	AllocConsole();
-	FILE* pCout;
-	freopen_s(&pCout, "CONOUT$", "w", stdout);
-	FILE* pCerr;
-	freopen_s(&pCerr, "CONOUT$", "w", stderr);
-	FILE* pCin;
-	freopen_s(&pCin, "CONIN$", "r", stdin);
-	std::cout.clear();
-	std::clog.clear();
-	std::cerr.clear();
-	std::cin.clear();
-#endif
-
+int WINAPI WinMain(
+	_In_ HINSTANCE hInstance,
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPSTR lpCmdLine,
+	_In_ int nCmdShow
+) {
 	TestGame game;
 
-	if (!game.Initialize(hInstance, "DX11 Game Engine Test")) {
+	if (!game.InitializeManual(hInstance, "DX11 Game Engine Test", 1024, 768)) {
 		MessageBoxW(nullptr, L"Failed to initialize game engine", L"Error", MB_ICONERROR);
 		return -1;
 	}
 
 	game.Run();
 	game.Shutdown();
-
-#ifdef _DEBUG
-	FreeConsole();
-#endif
 
 	return 0;
 }

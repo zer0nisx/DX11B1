@@ -53,8 +53,8 @@ set(ALL_SOURCES
     ${MATH_SOURCES}
 )
 
-# Create executable
-add_executable(${PROJECT_NAME} ${ALL_SOURCES})
+# Create Windows application (not console)
+add_executable(${PROJECT_NAME} WIN32 ${ALL_SOURCES})
 
 # Find packages
 find_package(directxtk CONFIG REQUIRED)
