@@ -54,13 +54,18 @@ bool Texture::LoadFromMemory(const void* data, size_t dataSize, ID3D11Device* de
 
     Release();
 
+    ComPtr<ID3D11Resource> resource;
     HRESULT hr = DirectX::CreateWICTextureFromMemory(
         device,
         static_cast<const uint8_t*>(data),
         dataSize,
-        m_texture.GetAddressOf(),
+        resource.GetAddressOf(),
         m_shaderResourceView.GetAddressOf()
     );
+
+    if (SUCCEEDED(hr)) {
+        hr = resource.As(&m_texture);
+    }
 
     if (SUCCEEDED(hr)) {
         D3D11_TEXTURE2D_DESC desc;
@@ -296,12 +301,17 @@ bool Texture::CreateShaderResourceView(ID3D11Device* device) {
 }
 
 bool Texture::LoadDDS(const std::wstring& filename, ID3D11Device* device) {
+    ComPtr<ID3D11Resource> resource;
     HRESULT hr = DirectX::CreateDDSTextureFromFile(
         device,
         filename.c_str(),
-        m_texture.GetAddressOf(),
+        resource.GetAddressOf(),
         m_shaderResourceView.GetAddressOf()
     );
+
+    if (SUCCEEDED(hr)) {
+        hr = resource.As(&m_texture);
+    }
 
     if (SUCCEEDED(hr)) {
         D3D11_TEXTURE2D_DESC desc;
@@ -316,12 +326,17 @@ bool Texture::LoadDDS(const std::wstring& filename, ID3D11Device* device) {
 }
 
 bool Texture::LoadWIC(const std::wstring& filename, ID3D11Device* device) {
+    ComPtr<ID3D11Resource> resource;
     HRESULT hr = DirectX::CreateWICTextureFromFile(
         device,
         filename.c_str(),
-        m_texture.GetAddressOf(),
+        resource.GetAddressOf(),
         m_shaderResourceView.GetAddressOf()
     );
+
+    if (SUCCEEDED(hr)) {
+        hr = resource.As(&m_texture);
+    }
 
     if (SUCCEEDED(hr)) {
         D3D11_TEXTURE2D_DESC desc;

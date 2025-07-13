@@ -141,6 +141,9 @@ private:
     bool CreateDepthStencilBuffer();
     bool CreateStates();
     void SetDefaultRenderStates();
+    bool CreateViewport();
+    bool CreateDefaultStates();
+    void CleanupRenderTargets();
 };
 
 } // namespace Renderer

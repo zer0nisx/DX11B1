@@ -18,9 +18,13 @@ namespace Animation {
     struct Bone;
 }
 
+} // namespace Mesh
+
 namespace Renderer {
     class D3D11Renderer;
 }
+
+namespace Mesh {
 
 struct SubMesh {
     UINT startIndex;
@@ -38,7 +42,7 @@ public:
 
     // Loading and creation
     bool LoadFromFile(const std::string& filename, GameEngine::Renderer::D3D11Renderer* renderer);
-    static std::shared_ptr<Mesh> LoadFromFile(const std::string& filename, GameEngine::Renderer::D3D11Renderer* renderer);
+    static std::shared_ptr<Mesh> CreateFromFile(const std::string& filename, GameEngine::Renderer::D3D11Renderer* renderer);
     bool CreateFromData(const std::vector<Vertex>& vertices, const std::vector<UINT>& indices,
                        GameEngine::Renderer::D3D11Renderer* renderer);
     bool CreateFromSkinnedData(const std::vector<SkinnedVertex>& vertices, const std::vector<UINT>& indices,

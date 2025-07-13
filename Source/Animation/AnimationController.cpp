@@ -374,7 +374,7 @@ void AnimationController::BlendAnimations() {
                     DirectX::XMMatrixScaling(1.0f - playingAnim.weight, 1.0f - playingAnim.weight, 1.0f - playingAnim.weight),
                     m_boneTransforms[i]
                 );
-                blended = DirectX::XMMatrixAdd(blended,
+                blended = blended +
                     DirectX::XMMatrixMultiply(
                         DirectX::XMMatrixScaling(playingAnim.weight, playingAnim.weight, playingAnim.weight),
                         animTransforms[i]

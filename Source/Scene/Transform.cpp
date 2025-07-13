@@ -130,7 +130,7 @@ DirectX::XMFLOAT3 Transform::GetWorldScale() const {
 DirectX::XMFLOAT3 Transform::GetForward() const {
     UpdateWorldMatrix();
     DirectX::XMFLOAT3 forward;
-    DirectX::XMStoreFloat3(&forward, DirectX::XMVector3Normalize(-m_worldMatrix.r[2]));
+    DirectX::XMStoreFloat3(&forward, DirectX::XMVector3Normalize(DirectX::XMVectorNegate(m_worldMatrix.r[2])));
     return forward;
 }
 
@@ -325,18 +325,21 @@ DirectX::XMMATRIX Transform::CreateRotationMatrix() const {
 
 DirectX::XMFLOAT3 Transform::MatrixToEuler(const DirectX::XMMATRIX& matrix) const {
     // Extract Euler angles from rotation matrix (in degrees)
-    float sy = sqrtf(matrix._11 * matrix._11 + matrix._21 * matrix._21);
+    DirectX::XMFLOAT4X4 mat;
+    DirectX::XMStoreFloat4x4(&mat, matrix);
+
+    float sy = sqrtf(mat._11 * mat._11 + mat._21 * mat._21);
 
     bool singular = sy < 1e-6f;
 
     float x, y, z;
     if (!singular) {
-        x = atan2f(matrix._32, matrix._33);
-        y = atan2f(-matrix._31, sy);
-        z = atan2f(matrix._21, matrix._11);
+        x = atan2f(mat._32, mat._33);
+        y = atan2f(-mat._31, sy);
+        z = atan2f(mat._21, mat._11);
     } else {
-        x = atan2f(-matrix._23, matrix._22);
-        y = atan2f(-matrix._31, sy);
+        x = atan2f(-mat._23, mat._22);
+        y = atan2f(-mat._31, sy);
         z = 0;
     }
 

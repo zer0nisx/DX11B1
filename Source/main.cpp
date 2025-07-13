@@ -439,7 +439,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     TestGame game;
 
     if (!game.Initialize(hInstance, "DX11 Game Engine Test", 1024, 768)) {
-        MessageBox(nullptr, L"Failed to initialize game engine", L"Error", MB_ICONERROR);
+        MessageBoxW(nullptr, L"Failed to initialize game engine", L"Error", MB_ICONERROR);
         return -1;
     }
 

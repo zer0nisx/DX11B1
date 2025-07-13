@@ -67,7 +67,7 @@ std::shared_ptr<Mesh> MeshManager::LoadMesh(const std::string& filename) {
 
     // Load new mesh
     LOG_INFO("Loading new mesh: " << filename);
-    auto mesh = Mesh::LoadFromFile(filename, m_renderer);
+    auto mesh = Mesh::CreateFromFile(filename, m_renderer);
 
     if (mesh) {
         m_meshes[filename] = mesh;

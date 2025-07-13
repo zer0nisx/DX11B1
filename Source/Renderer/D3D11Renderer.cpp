@@ -60,8 +60,8 @@ bool D3D11Renderer::Initialize(HWND hwnd, int width, int height, bool fullscreen
     }
 
     // Create constant buffers
-    m_constantBuffer = CreateConstantBuffer(sizeof(ConstantBuffer));
-    if (!m_constantBuffer) {
+    m_matrixBuffer = CreateConstantBuffer(sizeof(ConstantBuffer));
+    if (!m_matrixBuffer) {
         LOG_ERROR("Failed to create constant buffer");
         return false;
     }
@@ -348,7 +348,7 @@ void D3D11Renderer::Draw(UINT vertexCount, UINT startVertex) {
 
 void D3D11Renderer::UpdateConstantBuffer(const Math::Matrix4& world, const Math::Matrix4& view, const Math::Matrix4& projection) {
     D3D11_MAPPED_SUBRESOURCE mappedResource;
-    HRESULT hr = m_context->Map(m_constantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    HRESULT hr = m_context->Map(m_matrixBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
 
     if (SUCCEEDED(hr)) {
         ConstantBuffer* cb = (ConstantBuffer*)mappedResource.pData;
@@ -356,7 +356,7 @@ void D3D11Renderer::UpdateConstantBuffer(const Math::Matrix4& world, const Math:
         cb->View = DirectX::XMMatrixTranspose(view.ToXMMATRIX());
         cb->Projection = DirectX::XMMatrixTranspose(projection.ToXMMATRIX());
 
-        m_context->Unmap(m_constantBuffer.Get(), 0);
+        m_context->Unmap(m_matrixBuffer.Get(), 0);
     }
 }
 

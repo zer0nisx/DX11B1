@@ -39,7 +39,7 @@ bool Mesh::LoadFromFile(const std::string& filename, Renderer::D3D11Renderer* re
     return false;
 }
 
-std::shared_ptr<Mesh> Mesh::LoadFromFile(const std::string& filename, Renderer::D3D11Renderer* renderer) {
+std::shared_ptr<Mesh> Mesh::CreateFromFile(const std::string& filename, Renderer::D3D11Renderer* renderer) {
     AssimpLoader loader;
     std::shared_ptr<Mesh> mesh;
 

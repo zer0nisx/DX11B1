@@ -6,6 +6,41 @@ This TODO list tracks all critical tasks required to fix the current compilation
 
 ---
 
+## High Priority Issues
+
+### 1. Mesh.h Class Declaration Problems
+- [ ] Fix function overload conflicts in Mesh class (static vs non-static LoadFromFile)
+- [ ] Fix namespace resolution issues for D3D11Renderer references
+- [ ] Fix missing includes for proper forward declarations
+
+### 2. FileSystem Class Issues
+- [ ] Fix missing member variables (m_currentDirectory)
+- [ ] Fix missing method declarations (CreateDirectoryA, DeleteFileA, CopyFileA, etc.)
+- [ ] Add proper Windows API includes
+
+### 3. D3D11Renderer Class Issues
+- [ ] Fix missing member variables (m_constantBuffer, m_viewport, m_screenWidth, etc.)
+- [ ] Fix missing method declarations (CreateViewport, CreateDefaultStates, CleanupRenderTargets)
+- [ ] Add proper DirectX includes
+
+### 4. String/Character Encoding Issues
+- [ ] Fix MessageBox Unicode/ANSI conversion errors
+- [ ] Fix wide character string handling
+
+### 5. Texture Loading Issues
+- [ ] Fix DirectX texture creation function parameter mismatches
+- [ ] Update function calls to match current DirectXTK API
+
+### 6. RapidXML Template Issues
+- [ ] Fix template function resolution errors in rapidxml_print.hpp
+
+### 7. DirectXMath API Usage Issues
+- [ ] Fix XMMatrixAdd usage (deprecated function)
+- [ ] Fix XMMATRIX member access patterns
+- [ ] Fix XMStoreFloat3 parameter issues
+
+---
+
 ## 1️⃣ Header Includes and Namespace Fixes
 
 - [ ] **ShadowMap.h**: Add `#include <functional>` for `std::function` usage.
@@ -39,7 +74,7 @@ This TODO list tracks all critical tasks required to fix the current compilation
 ## 4️⃣ FileSystem Windows API Integration
 
 - [ ] **FileSystem.h/.cpp**:
-    - [ ] Fix Windows API function calls (`CreateDirectoryA`, `DeleteFileA`, etc.)—ensure correct signatures and error handling.
+    - [ ] Fix Windows API function calls (`CreateDirectoryA`, `DeleteFileA`, `CopyFileA`, etc.)—ensure correct signatures and error handling.
     - [ ] Add and initialize missing member variables (e.g., `m_currentDirectory`).
     - [ ] Fix filesystem iteration syntax (use correct STL or platform-specific APIs).
 
@@ -72,13 +107,19 @@ This TODO list tracks all critical tasks required to fix the current compilation
 
 ## 🏁 Priority Order
 
-1. Header includes and namespace fixes
-2. Vector3 reference issues
-3. Engine inheritance and access modifiers
-4. FileSystem Windows API integration
-5. DirectX Math corrections
-6. Function signature corrections
-7. Template/STL issues
+1. Mesh.h class declaration problems
+2. FileSystem class issues
+3. D3D11Renderer class issues
+4. Header includes and namespace fixes
+5. Vector3 reference issues
+6. Engine inheritance and access modifiers
+7. FileSystem Windows API integration
+8. DirectX Math corrections
+9. Function signature corrections
+10. Template/STL issues
+11. String/character encoding issues
+12. Texture loading issues
+13. RapidXML template issues
 
 ---
 
@@ -93,3 +134,8 @@ This TODO list tracks all critical tasks required to fix the current compilation
 **Note:** Tackle each item in the listed order for best results. Update this checklist as you resolve each issue.
 
 ---
+
+## Current Status
+
+- Status: Analysis complete, ready to start fixes
+- Priority: Focus on core class declaration issues first
