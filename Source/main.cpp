@@ -419,6 +419,11 @@ private:
     int m_currentTexture;
 };
 
+// Console entry point for compatibility
+int main() {
+    return WinMain(GetModuleHandle(nullptr), nullptr, GetCommandLineA(), SW_SHOWDEFAULT);
+}
+
 // Windows entry point
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     // Enable console for debugging

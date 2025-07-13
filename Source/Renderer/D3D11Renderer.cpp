@@ -338,6 +338,14 @@ void D3D11Renderer::SetConstantBuffer(ID3D11Buffer* buffer, UINT slot, bool vert
     }
 }
 
+void D3D11Renderer::SetTexture(ID3D11ShaderResourceView* texture, UINT slot) {
+    m_context->PSSetShaderResources(slot, 1, &texture);
+}
+
+void D3D11Renderer::SetSampler(ID3D11SamplerState* sampler, UINT slot) {
+    m_context->PSSetSamplers(slot, 1, &sampler);
+}
+
 void D3D11Renderer::DrawIndexed(UINT indexCount, UINT startIndex, INT baseVertex) {
     m_context->DrawIndexed(indexCount, startIndex, baseVertex);
 }
