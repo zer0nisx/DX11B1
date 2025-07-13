@@ -18,6 +18,10 @@ namespace Animation {
     struct Bone;
 }
 
+namespace Renderer {
+    class D3D11Renderer;
+}
+
 struct SubMesh {
     UINT startIndex;
     UINT indexCount;
@@ -33,16 +37,16 @@ public:
     virtual ~Mesh() = default;
 
     // Loading and creation
-    bool LoadFromFile(const std::string& filename, class Renderer::D3D11Renderer* renderer);
-    static std::shared_ptr<Mesh> LoadFromFile(const std::string& filename, class Renderer::D3D11Renderer* renderer);
+    bool LoadFromFile(const std::string& filename, GameEngine::Renderer::D3D11Renderer* renderer);
+    static std::shared_ptr<Mesh> LoadFromFile(const std::string& filename, GameEngine::Renderer::D3D11Renderer* renderer);
     bool CreateFromData(const std::vector<Vertex>& vertices, const std::vector<UINT>& indices,
-                       Renderer::D3D11Renderer* renderer);
+                       GameEngine::Renderer::D3D11Renderer* renderer);
     bool CreateFromSkinnedData(const std::vector<SkinnedVertex>& vertices, const std::vector<UINT>& indices,
-                              Renderer::D3D11Renderer* renderer);
+                              GameEngine::Renderer::D3D11Renderer* renderer);
 
     // Rendering
-    void Render(Renderer::D3D11Renderer* renderer, const Math::Matrix4& worldMatrix);
-    void RenderSubMesh(Renderer::D3D11Renderer* renderer, UINT subMeshIndex, const Math::Matrix4& worldMatrix);
+    void Render(GameEngine::Renderer::D3D11Renderer* renderer, const Math::Matrix4& worldMatrix);
+    void RenderSubMesh(GameEngine::Renderer::D3D11Renderer* renderer, UINT subMeshIndex, const Math::Matrix4& worldMatrix);
 
     // Getters
     const std::string& GetName() const { return m_name; }
@@ -66,12 +70,12 @@ public:
     // bool HasSkeleton() const { return !m_bones.empty(); }
 
     // Static mesh creation helpers
-    static std::shared_ptr<Mesh> CreateCube(Renderer::D3D11Renderer* renderer, float size = 1.0f);
-    static std::shared_ptr<Mesh> CreateSphere(Renderer::D3D11Renderer* renderer, float radius = 1.0f, UINT segments = 16);
-    static std::shared_ptr<Mesh> CreatePlane(Renderer::D3D11Renderer* renderer, float width = 1.0f, float height = 1.0f);
+    static std::shared_ptr<Mesh> CreateCube(GameEngine::Renderer::D3D11Renderer* renderer, float size = 1.0f);
+    static std::shared_ptr<Mesh> CreateSphere(GameEngine::Renderer::D3D11Renderer* renderer, float radius = 1.0f, UINT segments = 16);
+    static std::shared_ptr<Mesh> CreatePlane(GameEngine::Renderer::D3D11Renderer* renderer, float width = 1.0f, float height = 1.0f);
 
 protected:
-    bool CreateBuffers(Renderer::D3D11Renderer* renderer);
+    bool CreateBuffers(GameEngine::Renderer::D3D11Renderer* renderer);
     void CalculateBoundingBox();
 
 private:

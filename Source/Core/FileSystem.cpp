@@ -306,16 +306,24 @@ std::vector<std::string> FileSystem::GetFilesInDirectory(const std::string& path
             return files;
         }
 
-        auto iterator = recursive ?
-            std::filesystem::recursive_directory_iterator(path) :
-            std::filesystem::directory_iterator(path);
+        if (recursive) {
+            for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
+                if (entry.is_regular_file()) {
+                    std::string filePath = entry.path().string();
 
-        for (const auto& entry : iterator) {
-            if (entry.is_regular_file()) {
-                std::string filePath = entry.path().string();
+                    if (extension.empty() || GetFileExtension(filePath) == extension) {
+                        files.push_back(filePath);
+                    }
+                }
+            }
+        } else {
+            for (const auto& entry : std::filesystem::directory_iterator(path)) {
+                if (entry.is_regular_file()) {
+                    std::string filePath = entry.path().string();
 
-                if (extension.empty() || GetFileExtension(filePath) == extension) {
-                    files.push_back(filePath);
+                    if (extension.empty() || GetFileExtension(filePath) == extension) {
+                        files.push_back(filePath);
+                    }
                 }
             }
         }
@@ -334,13 +342,17 @@ std::vector<std::string> FileSystem::GetDirectoriesInDirectory(const std::string
             return directories;
         }
 
-        auto iterator = recursive ?
-            std::filesystem::recursive_directory_iterator(path) :
-            std::filesystem::directory_iterator(path);
-
-        for (const auto& entry : iterator) {
-            if (entry.is_directory()) {
-                directories.push_back(entry.path().string());
+        if (recursive) {
+            for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
+                if (entry.is_directory()) {
+                    directories.push_back(entry.path().string());
+                }
+            }
+        } else {
+            for (const auto& entry : std::filesystem::directory_iterator(path)) {
+                if (entry.is_directory()) {
+                    directories.push_back(entry.path().string());
+                }
             }
         }
     } catch (const std::filesystem::filesystem_error& e) {
@@ -462,15 +474,22 @@ std::vector<std::string> FileSystem::FindFiles(const std::string& pattern,
     try {
         std::regex regexPattern(pattern, std::regex_constants::icase);
 
-        auto iterator = recursive ?
-            std::filesystem::recursive_directory_iterator(actualSearchPath) :
-            std::filesystem::directory_iterator(actualSearchPath);
-
-        for (const auto& entry : iterator) {
-            if (entry.is_regular_file()) {
-                std::string filename = entry.path().filename().string();
-                if (std::regex_match(filename, regexPattern)) {
-                    foundFiles.push_back(entry.path().string());
+        if (recursive) {
+            for (const auto& entry : std::filesystem::recursive_directory_iterator(actualSearchPath)) {
+                if (entry.is_regular_file()) {
+                    std::string filename = entry.path().filename().string();
+                    if (std::regex_match(filename, regexPattern)) {
+                        foundFiles.push_back(entry.path().string());
+                    }
+                }
+            }
+        } else {
+            for (const auto& entry : std::filesystem::directory_iterator(actualSearchPath)) {
+                if (entry.is_regular_file()) {
+                    std::string filename = entry.path().filename().string();
+                    if (std::regex_match(filename, regexPattern)) {
+                        foundFiles.push_back(entry.path().string());
+                    }
                 }
             }
         }

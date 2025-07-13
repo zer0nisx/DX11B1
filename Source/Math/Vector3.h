@@ -93,7 +93,8 @@ public:
     }
 
     DirectX::XMVECTOR ToXMVECTOR() const {
-        return DirectX::XMLoadFloat3(&DirectX::XMFLOAT3(x, y, z));
+        DirectX::XMFLOAT3 temp(x, y, z);
+        return DirectX::XMLoadFloat3(&temp);
     }
 
     // Static utility vectors

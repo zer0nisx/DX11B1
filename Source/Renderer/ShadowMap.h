@@ -5,6 +5,7 @@
 #include <wrl/client.h>
 #include <vector>
 #include <memory>
+#include <functional>
 
 using Microsoft::WRL::ComPtr;
 

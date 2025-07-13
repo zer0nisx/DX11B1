@@ -1,7 +1,7 @@
 #include "D3D11Renderer.h"
 #include "../Core/Logger.h"
 #include <d3d11.h>
-#include <DirectXTex.h>
+// #include <DirectXTex.h> // Temporarily disabled for compilation
 
 namespace GameEngine {
 namespace Renderer {

@@ -4,10 +4,7 @@
 namespace GameEngine {
 namespace Core {
 
-Engine& Engine::GetInstance() {
-    static Engine instance;
-    return instance;
-}
+// Removed singleton pattern to allow inheritance
 
 Engine::Engine()
     : m_isRunning(false)

@@ -455,7 +455,7 @@ XmlAttribute XmlDocument::CreateAttribute(const std::string& name, const std::st
 }
 
 std::string XmlDocument::GetEncoding() const {
-    auto declaration = m_document.first_node(rapidxml::node_declaration);
+    auto declaration = m_document.first_node("", 0, true);
     if (declaration) {
         auto encodingAttr = declaration->first_attribute("encoding");
         if (encodingAttr) {
@@ -466,7 +466,7 @@ std::string XmlDocument::GetEncoding() const {
 }
 
 void XmlDocument::SetEncoding(const std::string& encoding) {
-    auto declaration = m_document.first_node(rapidxml::node_declaration);
+    auto declaration = m_document.first_node("", 0, true);
     if (!declaration) {
         AddDeclaration("1.0", encoding);
     } else {

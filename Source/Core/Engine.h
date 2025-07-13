@@ -15,7 +15,7 @@ namespace Core {
 
 class Engine {
 public:
-    static Engine& GetInstance();
+    Engine();
 
     bool Initialize(HINSTANCE hInstance, const std::string& title = "DX11 Game Engine",
                    int width = 1024, int height = 768, bool fullscreen = false);
@@ -57,9 +57,7 @@ protected:
     virtual void OnMouseMove(int x, int y, bool dragging);
     virtual void OnMouseButton(int button, bool isDown);
 
-private:
-    Engine();
-    ~Engine();
+    virtual ~Engine();
 
     // Non-copyable
     Engine(const Engine&) = delete;

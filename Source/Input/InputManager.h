@@ -6,6 +6,7 @@
 #include <vector>
 #include <functional>
 #include <memory>
+#include <string>
 
 namespace GameEngine {
 namespace Input {

@@ -2,6 +2,7 @@
 #include "Logger.h"
 #include "FileSystem.h"
 #include <sstream>
+#include <Windows.h>
 
 using namespace GameEngine::Core;
 
