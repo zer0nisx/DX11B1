@@ -1,6 +1,7 @@
 #include "D3D11Renderer.h"
 #include "../Core/Logger.h"
 #include <d3d11.h>
+#include <thread>
 // #include <DirectXTex.h> // Temporarily disabled for compilation
 
 namespace GameEngine {
@@ -11,6 +12,8 @@ D3D11Renderer::D3D11Renderer()
     , m_screenHeight(0)
     , m_initialized(false)
     , m_vsyncEnabled(true)
+    , m_maxFPS(60)
+    , m_lastFrameTime(std::chrono::high_resolution_clock::now())
 {
 }
 
@@ -138,6 +141,20 @@ void D3D11Renderer::BeginFrame(float r, float g, float b, float a) {
 void D3D11Renderer::EndFrame() {
     if (!m_initialized) {
         return;
+    }
+
+    // FPS limiting (only if VSync is disabled and max FPS is set)
+    if (!m_vsyncEnabled && m_maxFPS > 0) {
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        auto frameTime = std::chrono::duration_cast<std::chrono::microseconds>(currentTime - m_lastFrameTime);
+        auto targetFrameTime = std::chrono::microseconds(1000000 / m_maxFPS);
+
+        if (frameTime < targetFrameTime) {
+            auto sleepTime = targetFrameTime - frameTime;
+            std::this_thread::sleep_for(sleepTime);
+        }
+
+        m_lastFrameTime = std::chrono::high_resolution_clock::now();
     }
 
     // Present the frame
@@ -558,6 +575,22 @@ void D3D11Renderer::UpdateLightBuffer(const LightManager& lightManager, const Ma
         LOG_DEBUG("Light buffer updated successfully");
     } else {
         LOG_ERROR("Failed to map light buffer");
+    }
+}
+
+void D3D11Renderer::SetVSync(bool enabled) {
+    m_vsyncEnabled = enabled;
+    LOG_INFO("VSync " << (enabled ? "enabled" : "disabled"));
+}
+
+void D3D11Renderer::SetMaxFPS(int maxFPS) {
+    m_maxFPS = maxFPS;
+    m_lastFrameTime = std::chrono::high_resolution_clock::now();
+
+    if (maxFPS <= 0) {
+        LOG_INFO("FPS limiting disabled");
+    } else {
+        LOG_INFO("Max FPS set to " << maxFPS);
     }
 }
 

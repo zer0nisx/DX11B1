@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GameEngineConfig>
+    <!-- Graphics Settings -->
+    <Graphics>
+        <WindowWidth>1920</WindowWidth>
+        <WindowHeight>1080</WindowHeight>
+        <Fullscreen>false</Fullscreen>
+        <VSync>true</VSync>
+        <MaxFPS>144</MaxFPS>
+        <EnableShadows>true</EnableShadows>
+        <EnableLighting>true</EnableLighting>
+        <ShadowQuality>1.0</ShadowQuality>
+        <ShaderPath>Shaders</ShaderPath>
+    </Graphics>
+
+    <!-- Input Settings -->
+    <Input>
+        <MouseSensitivity>1.5</MouseSensitivity>
+        <InvertMouse>false</InvertMouse>
+        <KeyBindings>
+            <Forward>W</Forward>
+            <Backward>S</Backward>
+            <Left>A</Left>
+            <Right>D</Right>
+            <Jump>Space</Jump>
+            <Run>Shift</Run>
+            <Exit>Escape</Exit>
+            <ToggleFullscreen>F11</ToggleFullscreen>
+            <ToggleVSync>F2</ToggleVSync>
+            <ToggleLighting>L</ToggleLighting>
+            <ToggleShadows>K</ToggleShadows>
+            <ChangeTexture>T</ChangeTexture>
+            <ResetRotation>R</ResetRotation>
+            <CreateCube>C</CreateCube>
+            <ShowInfo>Space</ShowInfo>
+            <ReloadConfig>F5</ReloadConfig>
+            <ShowHelp>F1</ShowHelp>
+        </KeyBindings>
+    </Input>
+
+    <!-- Asset Settings -->
+    <Assets>
+        <AssetsDirectory>Assets</AssetsDirectory>
+        <ModelsDirectory>Models</ModelsDirectory>
+        <TexturesDirectory>Textures</TexturesDirectory>
+        <AudioDirectory>Audio</AudioDirectory>
+        <EnableAssetCache>true</EnableAssetCache>
+        <MaxCacheSize>512</MaxCacheSize>
+    </Assets>
+
+    <!-- Engine Settings -->
+    <Engine>
+        <LogLevel>Info</LogLevel>
+        <LogFile>engine.log</LogFile>
+        <EnableLogging>true</EnableLogging>
+        <EnableDebugOutput>false</EnableDebugOutput>
+        <MaxLogFileSize>10</MaxLogFileSize>
+    </Engine>
+</GameEngineConfig>

@@ -361,3 +361,15 @@ void ConfigManager::InitializeDefaultSettings() {
     // Engine defaults
     m_engineSettings = EngineSettings{};
 }
+
+void ConfigManager::ApplySettings() {
+    // Note: This method should be called after the engine systems are initialized
+
+    // Apply input settings
+    auto& inputManager = GameEngine::Input::InputManager::GetInstance();
+    inputManager.SetMouseSensitivity(m_inputSettings.mouseSensitivity);
+
+    // Note: Window and renderer settings need to be applied through the Engine
+    // since they require more complex state changes
+    Logger::GetInstance().LogInfo("Configuration settings applied to engine systems");
+}

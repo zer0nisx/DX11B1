@@ -16,6 +16,10 @@ Window::Window()
     , m_isMaximized(false)
     , m_isActive(true)
     , m_isInitialized(false)
+    , m_isFullscreen(false)
+    , m_windowedRect({0, 0, 0, 0})
+    , m_windowedStyle(0)
+    , m_windowedExStyle(0)
 {
 }
 
@@ -247,6 +251,71 @@ void Window::CreateWindowHandle(HINSTANCE hInstance, const std::string& title) {
 
     if (!m_hwnd) {
         throw std::runtime_error("Failed to create window");
+    }
+}
+
+bool Window::ToggleFullscreen() {
+    SetFullscreen(!m_isFullscreen);
+    return m_isFullscreen;
+}
+
+void Window::SetFullscreen(bool fullscreen) {
+    if (m_isFullscreen == fullscreen || !m_hwnd) {
+        return;
+    }
+
+    if (fullscreen) {
+        // Store current window state
+        m_windowedStyle = GetWindowLong(m_hwnd, GWL_STYLE);
+        m_windowedExStyle = GetWindowLong(m_hwnd, GWL_EXSTYLE);
+        GetWindowRect(m_hwnd, &m_windowedRect);
+
+        // Get monitor information
+        HMONITOR hMonitor = MonitorFromWindow(m_hwnd, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO monitorInfo;
+        monitorInfo.cbSize = sizeof(MONITORINFO);
+        GetMonitorInfo(hMonitor, &monitorInfo);
+
+        // Set fullscreen style
+        SetWindowLong(m_hwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+        SetWindowLong(m_hwnd, GWL_EXSTYLE, WS_EX_TOPMOST);
+
+        // Set fullscreen position and size
+        SetWindowPos(m_hwnd, HWND_TOP,
+            monitorInfo.rcMonitor.left,
+            monitorInfo.rcMonitor.top,
+            monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
+            monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
+            SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+
+        m_width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+        m_height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+
+        LOG_INFO("Switched to fullscreen mode: " << m_width << "x" << m_height);
+    }
+    else {
+        // Restore windowed mode
+        SetWindowLong(m_hwnd, GWL_STYLE, m_windowedStyle);
+        SetWindowLong(m_hwnd, GWL_EXSTYLE, m_windowedExStyle);
+
+        SetWindowPos(m_hwnd, HWND_NOTOPMOST,
+            m_windowedRect.left,
+            m_windowedRect.top,
+            m_windowedRect.right - m_windowedRect.left,
+            m_windowedRect.bottom - m_windowedRect.top,
+            SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+
+        m_width = m_windowedRect.right - m_windowedRect.left;
+        m_height = m_windowedRect.bottom - m_windowedRect.top;
+
+        LOG_INFO("Switched to windowed mode: " << m_width << "x" << m_height);
+    }
+
+    m_isFullscreen = fullscreen;
+
+    // Trigger resize callback if set
+    if (OnResize) {
+        OnResize(m_width, m_height);
     }
 }
 

@@ -26,6 +26,11 @@ public:
     void SetTitle(const std::string& title);
     void Resize(int width, int height);
 
+    // Fullscreen functionality
+    bool IsFullscreen() const { return m_isFullscreen; }
+    bool ToggleFullscreen();
+    void SetFullscreen(bool fullscreen);
+
     // Event callbacks
     std::function<void(int, int)> OnResize;
     std::function<void()> OnClose;
@@ -52,6 +57,12 @@ private:
     bool m_isMaximized;
     bool m_isActive;
     bool m_isInitialized;
+
+    // Fullscreen state
+    bool m_isFullscreen;
+    RECT m_windowedRect;  // Store windowed position/size
+    DWORD m_windowedStyle;
+    DWORD m_windowedExStyle;
 
     static constexpr const char* DEFAULT_CLASS_NAME = "DX11GameEngineWindow";
 };

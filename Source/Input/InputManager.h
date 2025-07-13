@@ -158,6 +158,10 @@ public:
     void SetCursorPosition(int x, int y);
     void LockCursor(bool lock);
 
+    // Mouse sensitivity
+    void SetMouseSensitivity(float sensitivity) { m_mouseSensitivity = sensitivity; }
+    float GetMouseSensitivity() const { return m_mouseSensitivity; }
+
     // Gamepad input
     bool IsGamepadConnected(int gamepadIndex) const;
     bool IsGamepadButtonDown(int gamepadIndex, GamepadButton button) const;
@@ -208,6 +212,7 @@ private:
     MouseState m_previousMouseState;
     bool m_cursorLocked;
     bool m_cursorVisible;
+    float m_mouseSensitivity;
 
     // Gamepad state (support up to 4 gamepads)
     static constexpr int MAX_GAMEPADS = 4;

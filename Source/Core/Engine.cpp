@@ -1,5 +1,6 @@
 #include "Engine.h"
 #include "ConfigManager.h"
+#include "SettingsInterface.h"
 #include <iostream>
 
 namespace GameEngine {
@@ -100,6 +101,10 @@ bool Engine::Initialize(HINSTANCE hInstance, const std::string& configFile) {
     // Initialize camera matrices
     UpdateViewMatrix();
     UpdateProjectionMatrix();
+
+    // Initialize and apply all settings through the modular interface
+    SETTINGS_INTERFACE.Initialize(m_window.get(), m_renderer.get());
+    SETTINGS_INTERFACE.ApplyAllSettings();
 
     // Call derived class initialization
     if (!OnInitialize()) {
@@ -369,20 +374,39 @@ void Engine::OnKeyboard(int key, bool isDown) {
         ReloadConfiguration();
     }
     else if (key == VK_F11) {
-        // Toggle fullscreen (placeholder)
-        LOG_INFO("F11 pressed - Fullscreen toggle not implemented yet");
+        // Toggle fullscreen using the modular settings interface
+        SETTINGS_INTERFACE.ToggleFullscreen();
+    }
+
+    else if (key == VK_F2) {
+        // Toggle VSync
+        SETTINGS_INTERFACE.ToggleVSync();
     }
 
     // Handle additional game-specific keys
     switch (key) {
         case VK_F1:
             // Show help
-            LOG_INFO("=== Controls ===");
-            LOG_INFO("W/A/S/D: Move camera");
-            LOG_INFO("Space: Show info");
-            LOG_INFO("R: Reset camera");
-            LOG_INFO("F5: Reload configuration");
-            LOG_INFO("ESC: Exit");
+            LOG_INFO("=== DX11 Game Engine Controls ===");
+            LOG_INFO("Movement:");
+            LOG_INFO("  W/A/S/D: Move camera");
+            LOG_INFO("  Space: Show info");
+            LOG_INFO("  R: Reset camera");
+            LOG_INFO("");
+            LOG_INFO("Performance:");
+            LOG_INFO("  F11: Toggle fullscreen");
+            LOG_INFO("  F2: Toggle VSync");
+            LOG_INFO("");
+            LOG_INFO("System:");
+            LOG_INFO("  F5: Reload configuration");
+            LOG_INFO("  F1: Show this help");
+            LOG_INFO("  ESC: Exit");
+            LOG_INFO("");
+            LOG_INFO("Current Settings:");
+            LOG_INFO("  Fullscreen: " << (SETTINGS_INTERFACE.IsFullscreen() ? "ON" : "OFF"));
+            LOG_INFO("  VSync: " << (SETTINGS_INTERFACE.IsVSyncEnabled() ? "ON" : "OFF"));
+            LOG_INFO("  Max FPS: " << SETTINGS_INTERFACE.GetMaxFPS());
+            LOG_INFO("  Mouse Sensitivity: " << SETTINGS_INTERFACE.GetMouseSensitivity());
             break;
     }
 }

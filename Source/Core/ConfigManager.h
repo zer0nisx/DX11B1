@@ -74,6 +74,9 @@ public:
     void SetKeyBinding(const std::string& action, int keyCode);
     int GetKeyBinding(const std::string& action, int defaultKey = 0);
 
+    // Apply settings to engine systems
+    void ApplySettings();
+
     // Validation
     bool ValidateSettings();
     void ResetToDefaults();

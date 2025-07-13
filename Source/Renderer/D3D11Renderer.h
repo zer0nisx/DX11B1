@@ -6,6 +6,7 @@
 #include <wrl/client.h>
 #include <string>
 #include <memory>
+#include <chrono>
 #include "../Math/Matrix4.h"
 #include "../Math/Vector3.h"
 #include "Light.h"
@@ -97,6 +98,12 @@ public:
     LightManager& GetLightManager() { return *m_lightManager; }
     ShadowMapManager& GetShadowMapManager() { return *m_shadowMapManager; }
 
+    // Performance settings
+    void SetVSync(bool enabled);
+    bool GetVSync() const { return m_vsyncEnabled; }
+    void SetMaxFPS(int maxFPS);
+    int GetMaxFPS() const { return m_maxFPS; }
+
     // Getters
     ID3D11Device* GetDevice() const { return m_device.Get(); }
     ID3D11DeviceContext* GetContext() const { return m_context.Get(); }
@@ -134,6 +141,10 @@ private:
     int m_screenHeight;
     bool m_initialized;
     bool m_vsyncEnabled;
+
+    // Performance settings
+    int m_maxFPS;
+    std::chrono::high_resolution_clock::time_point m_lastFrameTime;
 
     // Helper methods
     bool CreateDeviceAndSwapChain(HWND hwnd, bool fullscreen);

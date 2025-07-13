@@ -33,6 +33,7 @@ bool InputManager::Initialize(HWND hwnd) {
     m_previousMouseState = MouseState();
     m_cursorLocked = false;
     m_cursorVisible = true;
+    m_mouseSensitivity = 1.0f;
 
     // Initialize gamepad states
     for (int i = 0; i < MAX_GAMEPADS; i++) {
@@ -435,9 +436,11 @@ void InputManager::UpdateMouseState() {
     GetCursorPos(&cursorPos);
     ScreenToClient(m_hwnd, &cursorPos);
 
-    // Calculate delta
-    m_currentMouseState.deltaX = cursorPos.x - m_currentMouseState.x;
-    m_currentMouseState.deltaY = cursorPos.y - m_currentMouseState.y;
+    // Calculate delta with sensitivity applied
+    int rawDeltaX = cursorPos.x - m_currentMouseState.x;
+    int rawDeltaY = cursorPos.y - m_currentMouseState.y;
+    m_currentMouseState.deltaX = static_cast<int>(rawDeltaX * m_mouseSensitivity);
+    m_currentMouseState.deltaY = static_cast<int>(rawDeltaY * m_mouseSensitivity);
 
     // Update position
     m_currentMouseState.x = cursorPos.x;
