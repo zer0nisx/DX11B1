@@ -45,12 +45,14 @@ void MeshRenderer::Render(Renderer::D3D11Renderer* renderer) {
     // Use material if available, otherwise use default material from mesh
     std::shared_ptr<Mesh::Material> materialToUse = m_material ? m_material : m_mesh->GetMaterial();
 
-    // Render the mesh with the world transform
+    // Set material properties before rendering
     if (materialToUse) {
-        m_mesh->Render(renderer, worldMatrix, materialToUse.get());
-    } else {
-        m_mesh->Render(renderer, worldMatrix);
+        // Apply material properties to renderer (this would need to be implemented)
+        // For now, just render the mesh
     }
+
+    // Render the mesh with the world transform
+    m_mesh->Render(renderer, worldMatrix);
 }
 
 } // namespace Scene

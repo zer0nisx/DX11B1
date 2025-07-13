@@ -38,9 +38,13 @@ bool Texture::LoadFromFile(const std::wstring& filename, ID3D11Device* device) {
 
     if (success) {
         m_filename = filename;
-        Logger::GetInstance().LogInfo("Texture loaded successfully: " + std::string(filename.begin(), filename.end()));
+        // Convert wstring to string properly
+        std::string filenameStr(filename.begin(), filename.end());
+        Logger::GetInstance().LogInfo("Texture loaded successfully: " + filenameStr);
     } else {
-        Logger::GetInstance().LogError("Failed to load texture: " + std::string(filename.begin(), filename.end()));
+        // Convert wstring to string properly
+        std::string filenameStr(filename.begin(), filename.end());
+        Logger::GetInstance().LogError("Failed to load texture: " + filenameStr);
     }
 
     return success;

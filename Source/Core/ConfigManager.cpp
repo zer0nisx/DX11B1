@@ -2,7 +2,10 @@
 #include "Logger.h"
 #include "FileSystem.h"
 #include <sstream>
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <Windows.h>
+#undef CopyFile
 
 using namespace GameEngine::Core;
 

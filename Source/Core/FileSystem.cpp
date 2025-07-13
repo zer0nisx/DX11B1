@@ -5,8 +5,15 @@
 #include <regex>
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #include <shlobj.h>
+#undef CreateDirectory
+#undef DeleteFile
+#undef CopyFile
+#undef MoveFile
+#undef GetCurrentDirectory
 #endif
 
 using namespace GameEngine::Core;

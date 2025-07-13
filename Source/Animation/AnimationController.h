@@ -2,6 +2,7 @@
 
 #include "AnimationClip.h"
 #include "../Scene/Component.h"
+#include "../Scene/Entity.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>

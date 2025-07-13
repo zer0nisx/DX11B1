@@ -208,7 +208,8 @@ void Transform::Scale(float uniformScale) {
 
 // Look at functionality
 void Transform::LookAt(const DirectX::XMFLOAT3& target, const DirectX::XMFLOAT3& up) {
-    DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&GetWorldPosition());
+    DirectX::XMFLOAT3 worldPos = GetWorldPosition();
+    DirectX::XMVECTOR pos = DirectX::XMLoadFloat3(&worldPos);
     DirectX::XMVECTOR tar = DirectX::XMLoadFloat3(&target);
     DirectX::XMVECTOR upVec = DirectX::XMLoadFloat3(&up);
 
